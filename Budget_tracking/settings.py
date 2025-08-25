@@ -25,7 +25,15 @@ SECRET_KEY = 'django-insecure-uslbq-qp3!lysr&zj5z@b!=^@xsjsk@8=$_kc@s9pf5!3r1xw9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+CORS_ALLOW_ALL_ORIGINS = True  # (Allows all origins) OR Add on
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3002", 
+#     "http://localhost:8000", 
+#      "*" # Allow requests from React frontend Add on
+# ]
+
+CORS_ALLOW_CREDENTIALS=True
 
 
 # Application definition
@@ -49,6 +57,7 @@ INSTALLED_APPS = [
     'user_profile',
     'budget',
     'roles',
+    'corsheaders',
     
 ]
 
@@ -60,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'Budget_tracking.urls'
