@@ -74,7 +74,8 @@ class Project(models.Model):
 
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True)
     poc = models.ForeignKey(ClientPOC, on_delete=models.SET_NULL, null=True, blank=True, related_name="projects")
-    project_code = models.CharField(max_length=100, unique=True)
+    project_code = models.CharField(max_length=100)
+    project_name = models.CharField(max_length=255,unique=True)
     # type = models.CharField(max_length=100)
     summary = models.TextField()
     accountant= models.ForeignKey(UserRole, on_delete=models.SET_NULL, related_name="project_accountant", null=True,blank=True)
@@ -97,3 +98,9 @@ class Project(models.Model):
         from django.core.exceptions import ValidationError
         if self.poc and self.poc.client != self.client:
             raise ValidationError("POC must belong to the same client as the project")
+        
+    def clean(self):
+        if self.end_date < self.start_date:
+            raise ValidationError("End date cannot be earlier than start date.")
+        if self.estimated_date and self.start_date and self.estimated_date < self.start_date:
+            raise ValidationError("Estimated date cannot be before start date.")
