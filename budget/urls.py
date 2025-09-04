@@ -27,10 +27,12 @@ from .views import (
     MilestoneListCreateAPIView, MilestoneDetailAPIView,
     TransactionCreateAPIView, AdditionalRequestListCreateAPIView,
     AdditionalRequestApproveAPIView, NotificationListAPIView,
-    RuleListCreateAPIView
+    RuleListCreateAPIView, EstimationCreateAPIView
 )
 
 urlpatterns = [
+    path("estimations/", EstimationCreateAPIView.as_view(), name="estimation-list"),
+    path("estimations/<int:pk>/", EstimationCreateAPIView.as_view(), name="estimation-detail"),
     path("payments/", PaymentListCreateAPIView.as_view(), name="payments-list"),
     path("payments/<int:pk>/", PaymentDetailAPIView.as_view(), name="payments-detail"),
 

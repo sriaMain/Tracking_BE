@@ -17,6 +17,7 @@ from .models import ProjectEstimation, ProjectPaymentTracking, ProjectPaymentMil
 from .serializers import EstimationSerializer, ProjectPaymentTrackingSerializer, ProjectPaymentMilestoneSerializer
 from django.core.exceptions import ValidationError  
 
+from django.utils import timezone
 
 # Create your views here.
     
@@ -498,6 +499,38 @@ class AdditionalRequestListCreateAPIView(APIView):
         # send email
         notify_budget_request(req)
         return Response({"msg": "Budget request created"}, status=status.HTTP_201_CREATED)
+   
+    # def post(self, request, req_id, *args, **kwargs):
+    #     try:
+    #         additional_request = AdditionalBudgetRequest.objects.get(id=req_id)
+
+    #         # Only approve pending requests
+    #         if additional_request.status != AdditionalBudgetRequest.STATUS_PENDING:
+    #             return Response({"error": "Request is already processed"}, status=400)
+
+    #         # Mark request as approved
+    #         additional_request.status = AdditionalBudgetRequest.STATUS_APPROVED
+    #         additional_request.approved_by = request.user
+    #         additional_request.approved_at = timezone.now()
+    #         additional_request.approval_notes = request.data.get("approval_notes", "")
+    #         additional_request.save()
+
+    #         # **Update the related PaymentTracking**
+    #         payment = additional_request.payment_tracking
+    #         payment.additional_amount += additional_request.requested_amount  # Add the approved amount
+    #         payment.total_available_budget += additional_request.requested_amount  # Update total budget
+    #         payment.save()
+
+    #         return Response({"message": "Request approved successfully"})
+    #     except AdditionalBudgetRequest.DoesNotExist:
+    #         return Response({"error": "Request not found"}, status=404)
+    # def post(self, request, *args, **kwargs):
+    #     serializer = AdditionalBudgetRequestSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         serializer.save(created_by=request.user)
+    #         return Response(serializer.data, status=201)
+    #     return Response(serializer.errors, status=400)
+
 
 from .services import notify_budget_approval, notify_budget_rejection
 
@@ -511,22 +544,53 @@ class AdditionalRequestApproveAPIView(APIView):
     #     req = approve_request(req_id, request.user, notes)
     #     notify_budget_approved(req, [req.created_by.email] if req.created_by else [])
     #     return Response(AdditionalBudgetRequestSerializer(req).data)
-    def post(self, request, pk):
-        req = AdditionalBudgetRequest.objects.get(pk=pk)
-        action = request.data.get("action")  # "approve" or "reject"
+    # def post(self, request, pk):
+    #     req = AdditionalBudgetRequest.objects.get(pk=pk)
+    #     action = request.data.get("action")  # "approve" or "reject"
 
-        if action == "approve":
-            req.status = "Approved"
-            req.approved_by = request.user
-            req.save()
-            notify_budget_approval(req)
-        else:
-            req.status = "Rejected"
-            req.approved_by = request.user
-            req.save()
-            notify_budget_rejection(req)
+    #     if action == "approve":
+    #         req.status = "Approved"
+    #         req.approved_by = request.user
+    #         req.save()
+    #         notify_budget_approval(req)
+    #     else:
+    #         req.status = "Rejected"
+    #         req.approved_by = request.user
+    #         req.save()
+    #         notify_budget_rejection(req)
 
-        return Response({"msg": f"Budget {action}d"}, status=status.HTTP_200_OK)
+    #     return Response({"msg": f"Budget {action}d"}, status=status.HTTP_200_OK)
+    # def post(self, request, req_id, *args, **kwargs):
+    #     # req_id is available here
+    #     try:
+    #         request_obj = AdditionalBudgetRequest.objects.get(id=req_id)
+    #         # perform approve logic here
+    #         return Response({"message": "Request approved successfully"})
+    #     except AdditionalBudgetRequest.DoesNotExist:
+    #         return Response({"error": "Request not found"}, status=404)
+
+    def post(self, request, req_id, *args, **kwargs):
+        try:
+            additional_request = AdditionalBudgetRequest.objects.get(id=req_id)
+
+            if additional_request.status != AdditionalBudgetRequest.STATUS_PENDING:
+                return Response({"error": "Request is already processed"}, status=400)
+
+            # Approve the request
+            additional_request.status = AdditionalBudgetRequest.STATUS_APPROVED
+            additional_request.approved_by = request.user
+            additional_request.approved_at = timezone.now()
+            additional_request.approval_notes = request.data.get("approval_notes", "")
+            additional_request.save()
+
+            # Update only the additional_amount
+            payment = additional_request.payment_tracking
+            payment.additional_amount += additional_request.requested_amount
+            payment.save()  # total_available_budget is automatically updated via the property
+
+            return Response({"message": "Request approved successfully"})
+        except AdditionalBudgetRequest.DoesNotExist:
+            return Response({"error": "Request not found"}, status=404)
 
     # def delete(self, request, req_id):
     #     notes = request.data.get("approval_notes", "")

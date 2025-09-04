@@ -25,12 +25,12 @@ SECRET_KEY = 'django-insecure-qpz3d)rc^y0$wsy!w!vk@-p*k9u&^e7k_+x6a4#hb#oif!+o-g
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret')
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+# SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret')
+# DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# ALLOWED_HOSTS = ['*']
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS',
-                              os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost')).split(',')
+ALLOWED_HOSTS = ['.onrender.com']
+# ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS',
+#                               os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost')).split(',')
 
 
 CORS_ALLOW_ALL_ORIGINS = True 

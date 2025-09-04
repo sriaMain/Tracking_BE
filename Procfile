@@ -1,1 +1,1 @@
-web: ./start.sh
+web: gunicorn budget_tracking.wsgi

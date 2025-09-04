@@ -21,7 +21,7 @@ class EstimationSerializer(serializers.ModelSerializer):
             'estimation_review_by_client', 'estimation_review_by_client_name',
             'created_at', 'modified_at',
             'estimation_date', 'initial_estimation_amount',
-            'approved_estimation', 'purchase_order_status',
+            'purchase_order_status',
             'created_by', 'modified_by',
         )
         read_only_fields = ('created_at', 'modified_at')
