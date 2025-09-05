@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import ProjectEstimation, ProjectPaymentTracking, ProjectPaymentMilestone
 from project_creation.models import Project, Client
 from roles.models import UserRole
+from django.db.models import Sum
 class EstimationSerializer(serializers.ModelSerializer):
     project_name = serializers.SerializerMethodField()
     estimation_provider_name = serializers.SerializerMethodField()
@@ -39,78 +40,7 @@ class EstimationSerializer(serializers.ModelSerializer):
         return obj.estimation_review_by_client.client_name if obj.estimation_review_by_client else None
 
    
-    # def get_accountant(self, obj):
-    #     return UserRoleSerializer(obj.accountant).data if obj.accountant else None
-
-
-
-
-
-
-# class ProjectPaymentMilestoneSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ProjectPaymentMilestone
-#         fields = '__all__'
-
-
-# class MilestoneAmountSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ProjectPaymentMilestone
-#         fields = ['amount']
-
-
-# # ✅ Payment tracking serializer
-# class ProjectPaymentTrackingSerializer(serializers.ModelSerializer):
-#     milestones = MilestoneAmountSerializer(many=True, read_only=True)  # 👈 only amount here
-
-#     class Meta:
-#         model = ProjectPaymentTracking
-        # fields = '__all__'
-
-# class ProjectPaymentMilestoneSerializer(serializers.ModelSerializer):1111
-#     # """Detailed milestone serializer with status"""
-#     # class Meta:
-#     #     model = ProjectPaymentMilestone
-#     #     fields = ['id', 'name', 'amount', 'due_date', 'status', 'actual_completion_date', 'notes']
-# # class ProjectPaymentMilestoneSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ProjectPaymentMilestone
-#         fields = ['id', 'payment_tracking', 'name', 'amount', 'due_date']
-#         read_only_fields = ("created_by", "modified_by")
-
-#     # def create(self, validated_data):
-#     #     user = self.context['request'].user
-#     #     validated_data["created_by"] = user
-#     #     validated_data["modified_by"] = user
-#     #     return super().create(validated_data)
-
-
-# class ProjectPaymentTrackingSerializer(serializers.ModelSerializer):
-#     """Enhanced payment tracking serializer with budget analysis"""
-#     milestones = ProjectPaymentMilestoneSerializer(many=True, read_only=True)
-#     total_available_budget = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-#     total_milestone_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-#     budget_utilization_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
-#     is_budget_exceeded = serializers.BooleanField(read_only=True)
-#     budget_variance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-
-#     class Meta:
-#         model = ProjectPaymentTracking
-#         fields = '__all__'
-
-#     def validate(self, data):
-#         """Validate payment data during creation/update"""
-#         # Create a temporary instance for validation
-#         instance = ProjectPaymentTracking(**data)
-        
-#         # Check budget constraints
-#         errors = instance.validate_budget_constraints()
-#         if errors and not data.get('budget_exceeded_approved', False):
-#             raise serializers.ValidationError({
-#                 'budget_errors': errors
-#             })
-        
-#         return data
+   
 
 
 
@@ -156,6 +86,38 @@ class ProjectPaymentMilestoneSerializer(serializers.ModelSerializer):
         if value <= Decimal("0.00"):
             raise serializers.ValidationError("Milestone amount must be positive.")
         return value
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+
+        # Only recalc if milestone is completed
+        if validated_data.get("status") == "Completed":
+            tracking = instance.payment_tracking
+            approved_budget = tracking.approved_budget or Decimal("0.00")
+            payout = tracking.payout or Decimal("0.00")
+
+            # Sum of completed milestones
+            completed_sum = (
+                ProjectPaymentMilestone.objects.filter(
+                    payment_tracking=tracking, status="Completed"
+                ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+            )
+
+            # Safe updates (only if fields exist in model)
+            if hasattr(tracking, "completed_milestones_amount"):
+                tracking.completed_milestones_amount = completed_sum
+
+            if hasattr(tracking, "pending"):
+                tracking.pending = approved_budget - (payout + completed_sum)
+
+            if hasattr(tracking, "budget_utilization_percentage"):
+                tracking.budget_utilization_percentage = (
+                    ((payout + completed_sum) / approved_budget) * 100
+                    if approved_budget > 0 else Decimal("0.00")
+                )
+
+            tracking.save()
+
+        return instance
 
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):
@@ -189,9 +151,9 @@ class AdditionalBudgetRequestSerializer(serializers.ModelSerializer):
 
 class ProjectPaymentTrackingSerializer(serializers.ModelSerializer):
     total_available_budget = serializers.DecimalField(max_digits=16, decimal_places=2, read_only=True)
-    pending = serializers.DecimalField(max_digits=16, decimal_places=2, read_only=True)
+    pending = serializers.SerializerMethodField()
     total_milestones_amount = serializers.DecimalField(max_digits=16, decimal_places=2, read_only=True)
-    completed_milestones_amount = serializers.DecimalField( max_digits=16, decimal_places=2, read_only=True)
+    completed_milestones_amount = serializers.DecimalField(max_digits=16, decimal_places=2, read_only=True)
     budget_utilization_percentage = serializers.DecimalField(max_digits=6, decimal_places=2, read_only=True)
 
     created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
@@ -210,20 +172,40 @@ class ProjectPaymentTrackingSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["created_at", "modified_at", "total_available_budget", "total_milestones_amount", "completed_milestones_amount", "pending", "budget_utilization_percentage"]
 
-    def validate(self, attrs):
-        # Basic validations; heavy business rules live in services.
-        approved = attrs.get("approved_budget", getattr(self.instance, "approved_budget", None))
-        additional = attrs.get("additional_amount", getattr(self.instance, "additional_amount", None))
-        payout = attrs.get("payout", getattr(self.instance, "payout", None))
-        hold = attrs.get("hold", getattr(self.instance, "hold", None))
+    # def get_pending(self, obj):
+    #     """
+    #     Calculate pending funds as:
+    #     total_available_budget - sum of completed milestones - hold - retention + penalty
+    #     """
+    #     completed = obj.completed_milestones_amount or Decimal("0.00")
+    #     pending_amount = (obj.total_available_budget or Decimal("0.00")) - completed - (obj.hold or Decimal("0.00")) - (obj.retention_amount or Decimal("0.00")) + (obj.penalty_amount or Decimal("0.00"))
+    #     return pending_amount
+    def get_pending(self, obj):
+        """
+        Pending = total budget - payout - (completed - payout if completed > payout else 0)
+                - hold - retention + penalty
+        Ensures milestones and payout don’t double count.
+        """
+        completed = obj.completed_milestones_amount or Decimal("0.00")
+        payout = obj.payout or Decimal("0.00")
+        hold = obj.hold or Decimal("0.00")
+        retention = obj.retention_amount or Decimal("0.00")
+        penalty = obj.penalty_amount or Decimal("0.00")
 
-        total_available = (approved or Decimal("0.00")) + (additional or Decimal("0.00"))
-        if payout and payout > total_available:
-            raise serializers.ValidationError({"payout": "Payout cannot exceed total available budget (approved + additional)."})
-        if hold and hold > total_available:
-            raise serializers.ValidationError({"hold": "Hold cannot exceed total available budget."})
-        return attrs
+        extra_completed = (completed - payout) if completed > payout else Decimal("0.00")
+        pending_amount = (obj.total_available_budget or Decimal("0.00")) - payout - extra_completed - hold - retention + penalty
+        return pending_amount
 
+
+
+class ProjectPaymentTrackingUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectPaymentTracking
+        fields = "__all__"   # ✅ fixed here
+        extra_kwargs = {
+            "project": {"required": False},
+            "payment_type": {"required": False},
+        }
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:

@@ -348,7 +348,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import (
     ProjectPaymentTrackingSerializer, ProjectPaymentMilestoneSerializer,
-    PaymentTransactionSerializer, AdditionalBudgetRequestSerializer, NotificationSerializer, RuleSerializer
+    PaymentTransactionSerializer, AdditionalBudgetRequestSerializer, NotificationSerializer, RuleSerializer,ProjectPaymentTrackingUpdateSerializer
 )
 from .models import ProjectPaymentTracking, ProjectPaymentMilestone, PaymentTransaction, AdditionalBudgetRequest, Notification, Rule
 from .services import create_payment, update_payment, get_payment
@@ -394,6 +394,20 @@ class PaymentDetailAPIView(APIView):
         ser.is_valid(raise_exception=True)
         p = update_payment(pk, ser.validated_data, request.user)
         return Response(ProjectPaymentTrackingSerializer(p).data)
+        
+    def put(self, request, pk):
+        serializer = ProjectPaymentTrackingUpdateSerializer(
+            instance=self.get_object(pk),
+            data=request.data,
+            partial=False,   # full update
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        updated_instance = update_payment(pk, serializer.validated_data, request.user)
+        return Response(ProjectPaymentTrackingSerializer(updated_instance).data)
+    
+ 
+
 
     def delete(self, request, pk):
         obj = get_payment(pk)
