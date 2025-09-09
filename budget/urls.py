@@ -27,18 +27,24 @@ from .views import (
     MilestoneListCreateAPIView, MilestoneDetailAPIView,
     TransactionCreateAPIView, AdditionalRequestListCreateAPIView,
     AdditionalRequestApproveAPIView, NotificationListAPIView,
-    RuleListCreateAPIView, EstimationCreateAPIView
+    RuleListCreateAPIView, EstimationCreateAPIView,AddHoldView, ReleaseHoldView,ProjectEstimationAPIView,ProjectPaymentTrackingAPIView,ProjectEstimationPaymentAPIView,ProfitLossAdvancedAPIView
 )
 
 urlpatterns = [
     path("estimations/", EstimationCreateAPIView.as_view(), name="estimation-list"),
     path("estimations/<int:pk>/", EstimationCreateAPIView.as_view(), name="estimation-detail"),
+    path('project/<int:pk>/estimation/', ProjectEstimationAPIView.as_view(), name='project-estimation'),
+    path('project/<int:pk>/payments/', ProjectPaymentTrackingAPIView.as_view(), name='project-payments'),
+    path('project/<int:pk>/estimation/payment/', ProjectEstimationPaymentAPIView.as_view(), name='project-financial-detail'),
+
     path("payments/", PaymentListCreateAPIView.as_view(), name="payments-list"),
     path("payments/<int:pk>/", PaymentDetailAPIView.as_view(), name="payments-detail"),
+    path('projects/<int:pk>/add-hold/', AddHoldView.as_view(), name='add-hold'),
+    path('holds/<int:hold_id>/release/', ReleaseHoldView.as_view(), name='release-hold'),
 
     path("milestones/", MilestoneListCreateAPIView.as_view(), name="milestones-list"),
     path("milestones/<int:pk>/", MilestoneDetailAPIView.as_view(), name="milestones-detail"),
-
+    path("profit-loss-advanced/<int:pk>/", ProfitLossAdvancedAPIView.as_view(), name="profit-loss-advanced"),
     path("transactions/", TransactionCreateAPIView.as_view(), name="transactions-create"),
 
     path("additional-requests/", AdditionalRequestListCreateAPIView.as_view(), name="additional-list"),

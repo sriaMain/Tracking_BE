@@ -30,6 +30,7 @@ DEBUG = True
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ["tracking-be.onrender.com", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["*"]
 # ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS',
 #                               os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost')).split(',')
 

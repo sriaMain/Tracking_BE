@@ -94,13 +94,22 @@ class Project(models.Model):
     modified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='projects_modified_by')    
 
 
+    # def clean(self):
+    #     from django.core.exceptions import ValidationError
+    #     if self.poc and self.poc.client != self.client:
+    #         raise ValidationError("POC must belong to the same client as the project")
+        
+    # def clean(self):
+    #     if self.end_date < self.start_date:
+    #         raise ValidationError("End date cannot be earlier than start date.")
+    #     if self.estimated_date and self.start_date and self.estimated_date < self.start_date:
+    #         raise ValidationError("Estimated date cannot be before start date.")
+
     def clean(self):
         from django.core.exceptions import ValidationError
-        if self.poc and self.poc.client != self.client:
+        if self.poc and self.client and self.poc.client != self.client:
             raise ValidationError("POC must belong to the same client as the project")
-        
-    def clean(self):
-        if self.end_date < self.start_date:
+        if self.end_date and self.start_date and self.end_date < self.start_date:
             raise ValidationError("End date cannot be earlier than start date.")
         if self.estimated_date and self.start_date and self.estimated_date < self.start_date:
             raise ValidationError("Estimated date cannot be before start date.")

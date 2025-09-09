@@ -1,6 +1,18 @@
 from django.utils import timezone
 from .tasks import send_email_async, send_html_email_async
 from django.template.loader import render_to_string
+from django.utils import timezone
+from .tasks import send_email_async
+from decimal import Decimal
+from rest_framework.exceptions import ValidationError
+from django.db.models import Sum
+from .models import ProjectPaymentMilestone, ProjectPaymentTracking, PaymentTransaction, AdditionalBudgetRequest,ProjectEstimation
+from project_creation.models import Project
+from django.db import transaction
+from .exceptions import ObjectNotFound
+from django.core.exceptions import ObjectDoesNotExist
+
+
 
 def _listify(recipients):
     # allow single string or list
@@ -8,35 +20,6 @@ def _listify(recipients):
         return []
     return recipients if isinstance(recipients, (list, tuple)) else [recipients]
 
-# def notify_budget_request(obj, recipients):
-#     subject = f"[Action Required] Budget Request for {obj.payment_tracking.project.project_name}"
-#     context = {
-#         "project": obj.payment_tracking.project.project_name,
-#         "amount": obj.requested_amount,
-#         "reason": obj.reason,
-#         "requested_by": str(obj.created_by),
-#         "date": timezone.localtime(obj.created_at).strftime("%Y-%m-%d %H:%M"),
-#         "request_id": obj.id,
-#     }
-#     body = render_to_string("finance/emails/budget_request.txt", context)
-#     html = render_to_string("finance/emails/budget_request.html", context)
-#     send_html_email_async.delay(subject, body, html, _listify(recipients))
-
-# def notify_budget_approved(obj, recipients):
-#     subject = f"[Approved] Budget Request for {obj.payment_tracking.project.project_name}"
-#     context = {"project": obj.payment_tracking.project.project_name, "amount": obj.requested_amount, "approved_by": str(obj.approved_by), "approved_at": timezone.localtime(obj.approved_at).strftime("%Y-%m-%d %H:%M")}
-#     body = render_to_string("finance/emails/budget_approved.txt", context)
-#     html = render_to_string("finance/emails/budget_approved.html", context)
-#     send_html_email_async.delay(subject, body, html, _listify(recipients))
-
-# def notify_budget_rejected(obj, recipients):
-#     subject = f"[Rejected] Budget Request for {obj.payment_tracking.project.project_name}"
-#     context = {"project": obj.payment_tracking.project.project_name, "amount": obj.requested_amount, "approved_by": str(obj.approved_by), "notes": obj.approval_notes}
-#     body = render_to_string("finance/emails/budget_rejected.txt", context)
-#     html = render_to_string("finance/emails/budget_rejected.html", context)
-#     send_html_email_async.delay(subject, body, html, _listify(recipients))
-from django.utils import timezone
-from .tasks import send_email_async
 
 def notify_budget_request(request_obj):
     """Notify finance head for approval request"""
@@ -82,21 +65,6 @@ Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}
     recipients = [request_obj.created_by.email]
     send_email_async.delay(subject, message, recipients)
 
-
-# def notify_milestone_update(milestone_obj):
-#     subject = f"Milestone Update - {milestone_obj.payment_tracking.project.project_name}"
-#     message = f"""
-# Milestone '{milestone_obj.name}' has been updated.
-
-# Status: {milestone_obj.status}
-# Amount: {milestone_obj.amount}
-# Due Date: {milestone_obj.due_date}
-# Notes: {milestone_obj.notes or 'N/A'}
-#     """
-#     recipients = ["project-owner@company.com", "finance@company.com"]
-#     send_email_async.delay(subject, message, recipients)
-
-
 def notify_budget_breach(payment_obj):
     subject = f"⚠️ Budget Breach Alert - {payment_obj.project.project_name}"
     message = f"""
@@ -112,12 +80,6 @@ Pending: {payment_obj.pending}
     send_email_async.delay(subject, message, recipients)
 
 
-# def notify_milestone_update(milestone, recipients):
-#     subject = f"Milestone Update: {milestone.payment_tracking.project.project_name} - {milestone.name}"
-#     context = {"milestone": milestone}
-#     body = render_to_string("finance/emails/milestone_update.txt", context)
-#     html = render_to_string("finance/emails/milestone_update.html", context)
-#     send_html_email_async.delay(subject, body, html, _listify(recipients))
 
 def notify_budget_breach(payment, recipients):
     subject = f"Budget Exceeded: {payment.project.project_name}"
@@ -128,12 +90,6 @@ def notify_budget_breach(payment, recipients):
 
 
 
-from decimal import Decimal
-from django.db import transaction
-from rest_framework.exceptions import ValidationError
-from .models import ProjectPaymentTracking, ProjectPaymentMilestone, PaymentTransaction, AdditionalBudgetRequest, PaymentHistory
-from django.db.models import Sum
-from .exceptions import ObjectNotFound
 
 def get_payment(payment_id):
     try:
@@ -167,11 +123,7 @@ def delete_payment(payment_id):
     return True
 
 
-from decimal import Decimal
-from rest_framework.exceptions import ValidationError
-from django.db.models import Sum
-from .models import ProjectPaymentMilestone, ProjectPaymentTracking
-from .exceptions import ObjectNotFound
+
 
 def create_milestone(validated_data, user, enforce_budget=True):
     payment = validated_data["payment_tracking"]
@@ -198,30 +150,8 @@ def create_milestone(validated_data, user, enforce_budget=True):
     )
     return m
 
-# def update_milestone(milestone_id, validated_data, user):
-#     try:
-#         m = ProjectPaymentMilestone.objects.get(pk=milestone_id)
-#     except ProjectPaymentMilestone.DoesNotExist:
-#         raise ObjectNotFound(f"Milestone {milestone_id} not found")
-#     if "status" in validated_data and validated_data["status"] == "Completed" and not m.actual_completion_date:
-#         m.actual_completion_date = m.actual_completion_date or None
-#     for k, v in validated_data.items():
-#         setattr(m, k, v)
-#     m.modified_by = user
-#     m.save()
-#     return m
-# def notify_milestone_update(milestone_obj):
-#     subject = f"Milestone Update - {milestone_obj.payment_tracking.project.project_name}"
-#     message = f"""
-# Milestone '{milestone_obj.name}' has been updated.
 
-# Status: {milestone_obj.status}
-# Amount: {milestone_obj.amount}
-# Due Date: {milestone_obj.due_date}
-# Notes: {milestone_obj.notes or 'N/A'}
-#     """
-#     recipients = ["project-owner@company.com", "finance@company.com"]
-#     send_email_async.delay(subject, message, recipients)
+
 def notify_milestone_update(milestone_obj, extra_emails=None):
     subject = f"Milestone Update - {milestone_obj.payment_tracking.project.project_name}"
     message = f"""
@@ -268,13 +198,6 @@ def delete_milestone(milestone_id):
 
 
 
-from decimal import Decimal
-from rest_framework.exceptions import ValidationError
-from django.db import transaction
-from .models import PaymentTransaction, ProjectPaymentTracking
-from django.db.models import Sum
-from .exceptions import ObjectNotFound
-
 def create_transaction(payment_id, amount, user, method=None, notes=None):
     payment = ProjectPaymentTracking.objects.get(pk=payment_id)
     if amount <= Decimal("0.00"):
@@ -300,11 +223,7 @@ def create_transaction(payment_id, amount, user, method=None, notes=None):
     return tx
 
 
-from django.db import transaction
-from django.utils import timezone
-from .models import AdditionalBudgetRequest, ProjectPaymentTracking
-from rest_framework.exceptions import ValidationError
-from .exceptions import ObjectNotFound
+
 
 def request_additional(payment_id, amount, reason, user):
     payment = ProjectPaymentTracking.objects.get(pk=payment_id)
@@ -399,3 +318,124 @@ def evaluate_and_notify(payment):
                     )
         except Exception:
             continue
+
+# def calculate_project_profit_loss(pk):  
+#     from project_creation.models import Project
+#     from .models import ProjectEstimation, ProjectPaymentTracking
+#     try:
+#         project = Project.objects.get(pk=pk)
+#     except Project.DoesNotExist:
+#         raise ObjectNotFound(f"Project {pk} not found")
+
+#     estimation = ProjectEstimation.objects.filter(project=project).first()
+#     payment = ProjectPaymentTracking.objects.filter(project=project).first()
+
+#     estimated_submitted = estimation.estimated_amount if estimation else Decimal("0.00")
+#     estimated_approved = estimation.approved_amount if estimation else Decimal("0.00")
+#     project_cost_approved_budget = payment.approved_budget if payment else Decimal("0.00")
+#     project_cost_actuals = payment.actuals if payment else Decimal("0.00")
+#     payout = payment.payout if payment else Decimal("0.00")
+#     pending = payment.pending if payment else Decimal("0.00")
+
+#     profit_loss = (estimated_approved - project_cost_actuals) if estimated_approved and project_cost_actuals else Decimal("0.00")
+
+#     return {
+#         "estimated_submitted": estimated_submitted,
+#         "estimated_approved": estimated_approved,
+#         "project_cost_approved_budget": project_cost_approved_budget,
+#         "project_cost_actuals": project_cost_actuals,
+#         "payout": payout,
+#         "pending": pending,
+#         "profit_loss": profit_loss
+#     }
+# def calculate_project_profit_loss(pk):  
+#     try:
+#         project = Project.objects.get(pk=pk)
+#     except Project.DoesNotExist:
+#         raise ObjectDoesNotExist(f"Project {pk} not found")
+
+#     estimation = ProjectEstimation.objects.filter(project=project).first()
+#     payment = ProjectPaymentTracking.objects.filter(project=project).first()
+
+#     estimated_submitted = estimation.initial_estimation_amount if estimation else Decimal("0.00")
+#     estimated_approved = estimation.approved_amount if estimation else Decimal("0.00")
+
+#     project_cost_approved_budget = payment.approved_budget if payment else Decimal("0.00")
+    
+#     # Calculate actuals from payment fields (payout + retention + holds - penalty)
+#     project_cost_actuals = (
+#         (payment.payout or Decimal("0.00"))
+#         + (payment.retention_amount or Decimal("0.00"))
+#         + (payment.total_holds_amount or Decimal("0.00"))
+#         - (payment.penalty_amount or Decimal("0.00"))
+#         if payment else Decimal("0.00")
+#     )
+
+#     payout = payment.payout if payment else Decimal("0.00")
+#     pending = payment.pending if payment else Decimal("0.00")
+
+#     profit_loss = (estimated_approved or Decimal("0.00")) - (project_cost_actuals or Decimal("0.00"))
+
+#     return {
+#         "estimated_submitted": estimated_submitted,
+#         "estimated_approved": estimated_approved,
+#         "project_cost_approved_budget": project_cost_approved_budget,
+#         "project_cost_actuals": project_cost_actuals,
+#         "payout": payout,
+#         "pending": pending,
+#         "profit_loss": profit_loss
+#     }
+def calculate_project_profit_loss(pk):
+    try:
+        project = Project.objects.get(pk=pk)
+    except Project.DoesNotExist:
+        raise Exception(f"Project {pk} not found")
+
+    # -------- Estimations --------
+    estimations = ProjectEstimation.objects.filter(project=project)
+
+    # Submitted is always the initial estimation sum
+    estimated_submitted = sum(
+        (e.initial_estimation_amount or Decimal("0.00")) for e in estimations
+    )
+
+    # Approved: fallback to initial if approved_amount is None but status is received/approved
+    estimated_approved = sum(
+        (
+            e.approved_amount
+            if e.approved_amount is not None
+            else (e.initial_estimation_amount if e.purchase_order_status in ["Received", "Pending"] else Decimal("0.00"))
+        )
+        for e in estimations
+    )
+
+    # -------- Payments --------
+    payments = ProjectPaymentTracking.objects.filter(project=project)
+
+    project_cost_approved_budget = sum(
+        (p.total_available_budget or Decimal("0.00")) for p in payments
+    )
+
+    project_cost_actuals = sum(
+        ((p.payout or Decimal("0.00")) +
+         (p.retention_amount or Decimal("0.00")) +
+         (p.total_holds_amount or Decimal("0.00")) -
+         (p.penalty_amount or Decimal("0.00")))
+        for p in payments
+    )
+
+    payout = sum((p.payout or Decimal("0.00")) for p in payments)
+    pending = sum((p.pending or Decimal("0.00")) for p in payments)
+
+    # -------- Profit / Loss --------
+    profit_loss = estimated_approved - project_cost_actuals
+
+    return {
+        "estimated_submitted": estimated_submitted,
+        "estimated_approved": estimated_approved,
+        "project_cost_approved_budget": project_cost_approved_budget,
+        "project_cost_actuals": project_cost_actuals,
+        "payout": payout,
+        "pending": pending,
+        "profit_loss": profit_loss,
+    }

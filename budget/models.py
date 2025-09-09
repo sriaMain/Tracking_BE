@@ -14,6 +14,9 @@ import os
 from django.db.models import Sum
 from masterdata.models import MasterData
 from decimal import Decimal
+from django.db import models, transaction
+from django.utils import timezone
+from masterdata.models import MasterData
  
 # Create your models here.
 
@@ -54,13 +57,7 @@ class ProjectEstimation(BaseModel):
 
 
 
-from decimal import Decimal
-from django.conf import settings
-from django.db import models, transaction
-from django.utils import timezone
-from django.db.models import Sum
-from django.core.exceptions import ValidationError
-from masterdata.models import MasterData
+
 
 # Prefer importing Project from your project_creation app.
 # If you DO NOT have a separate Project model, uncomment the local Project class below.
@@ -76,15 +73,7 @@ CURRENCY_CHOICES = [
     ("USD", "US Dollar"),
     ("EUR", "Euro"),
 ]
-
-
-
-
 class ProjectPaymentTracking(models.Model):
-    """
-    Core payment tracking. All amounts are stored as Decimal fields (currency-aware field can be extended).
-    Business calculations (pending, totals) are exposed as properties so UI/serializers can use them.
-    """
     COST_TYPE_CHOICES = [
         ("Manpower", "Manpower"),
         ("Operation Cost", "Operation Cost"),
@@ -94,31 +83,22 @@ class ProjectPaymentTracking(models.Model):
     ]
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="payments")
-
     payment_type = models.CharField(max_length=50, choices=COST_TYPE_CHOICES)
     resource = models.ForeignKey(MasterData, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
-
     currency = models.CharField(max_length=6, choices=CURRENCY_CHOICES, default="INR")
 
-    # Budgets & allocations
     approved_budget = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal("0.00"))
     additional_amount = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal("0.00"))
 
-    # Running amounts
-    payout = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal("0.00"))   # cumulative paid
-    hold = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal("0.00"))
-    hold_reason = models.TextField(blank=True, null=True)
-
+    payout = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal("0.00"))
     retention_amount = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal("0.00"))
     penalty_amount = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal("0.00"))
 
-    # Controls
     is_budget_locked = models.BooleanField(default=False)
     budget_exceeded_approved = models.BooleanField(default=False)
 
-    # Audit
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="payment_created")
-    modified_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="payment_modified")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="payment_created")
+    modified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="payment_modified")
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
@@ -128,60 +108,60 @@ class ProjectPaymentTracking(models.Model):
         verbose_name_plural = "Project Payment Trackings"
 
     def __str__(self):
-        return f"{self.project.project_name} - {self.payment_type} (#{self.id})"
+        return f"{getattr(self.project, 'project_name', self.project_id)} - {self.payment_type} (#{self.id})"
 
     @property
     def total_available_budget(self) -> Decimal:
-        """Approved + additional (only approved additionals should update this field via workflow)."""
         return (self.approved_budget or Decimal("0.00")) + (self.additional_amount or Decimal("0.00"))
 
     @property
     def total_milestones_amount(self) -> Decimal:
-        """Sum of all milestones (planned amounts)."""
         return self.milestones.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
 
     @property
     def completed_milestones_amount(self) -> Decimal:
-        """Sum of all completed milestone amounts."""
         return self.milestones.filter(status="Completed").aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
 
     @property
-    def pending(self) -> Decimal:
-        return self.total_available_budget - (self.payout or Decimal("0.00")) - (self.hold or Decimal("0.00")) - (self.retention_amount or Decimal("0.00")) + (self.penalty_amount or Decimal("0.00"))
+    def total_holds_amount(self) -> Decimal:
+        # expects related_name 'holds' on Hold model
+        return self.holds.filter(is_active=True).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
 
+    @property
+    def pending(self) -> Decimal:
+        return (
+            self.total_available_budget
+            - (self.payout or Decimal("0.00"))
+            - self.total_holds_amount
+            - (self.retention_amount or Decimal("0.00"))
+            + (self.penalty_amount or Decimal("0.00"))
+        )
 
     @property
     def budget_utilization_percentage(self) -> Decimal:
         if self.total_available_budget == Decimal("0.00"):
             return Decimal("0.00")
-        return (self.total_milestones_amount / self.total_available_budget) * Decimal("100.00")
+        used = (self.payout or Decimal("0.00")) + (self.retention_amount or Decimal("0.00")) + self.total_holds_amount
+        return (used / self.total_available_budget) * Decimal("100.00")
 
     @property
     def is_budget_exceeded(self) -> bool:
         return self.total_milestones_amount > self.total_available_budget
 
-    # def recalc_and_save(self):
-    #     """
-    #     Helper to force-save (useful if you programmatically update related models and want derived fields recalculated).
-    #     Note: derived fields are properties — nothing to persist, but you might want this hook for side effects later.
-    #     """
-    #     # Example side-effect: if budget not exceeded, clear flag
-    #     if not self.is_budget_exceeded and self.budget_exceeded_approved:
-    #         self.budget_exceeded_approved = False
-    #         self.save(update_fields=["budget_exceeded_approved"])
-            
-    # In ProjectPaymentTracking model
-def recalc_payout(self):
-    total = self.milestones.filter(status="Completed").aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-    self.payout = total
-    self.save(update_fields=["payout"])
+    def recalc_payout(self):
+        total = self.milestones.filter(status="Completed").aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        self.payout = total
 
-
+    def save(self, *args, **kwargs):
+        try:
+            self.recalc_payout()
+        except Exception:
+            pass
+        self.budget_exceeded_approved = self.is_budget_exceeded
+        super().save(*args, **kwargs)
+ 
 
 class ProjectPaymentMilestone(models.Model):
-    """
-    Milestones can be planned and when completed they enable payouts automatically.
-    """
     STATUS_CHOICES = [
         ("Planned", "Planned"),
         ("In Progress", "In Progress"),
@@ -198,8 +178,8 @@ class ProjectPaymentMilestone(models.Model):
     actual_completion_date = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True, null=True)
 
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="milestone_created")
-    modified_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="milestone_modified")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="milestone_created")
+    modified_by = models.ForeignKey(User,on_delete=models.SET_NULL, null=True, related_name="milestone_modified")
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
 
@@ -211,41 +191,48 @@ class ProjectPaymentMilestone(models.Model):
     def __str__(self):
         return f"{self.name} - {self.amount} [{self.status}]"
 
-    def clean(self):
-        """
-        Optional model-level validation: ensure milestones don't exceed budget unless explicitly approved.
-        """
-        if not self.payment_tracking_id:
-            return
-
-        existing_total = self.payment_tracking.milestones.exclude(pk=self.pk if self.pk else None).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-        new_total = existing_total + (self.amount or Decimal("0.00"))
-        available = self.payment_tracking.total_available_budget
-
-        if new_total > available and not self.payment_tracking.budget_exceeded_approved:
-            raise ValidationError(
-                f"Adding this milestone (₹{self.amount}) would exceed available budget. "
-                f"Current: ₹{existing_total}, Available: ₹{available}, Shortfall: ₹{new_total - available}"
-            )
-
     def save(self, *args, **kwargs):
-        """
-        Automatically update the parent tracking's payout when a milestone is marked Completed.
-        """
         is_new = self.pk is None
         old_status = None
-
         if not is_new:
-            old_status = ProjectPaymentMilestone.objects.get(pk=self.pk).status
+            try:
+                old_status = ProjectPaymentMilestone.objects.get(pk=self.pk).status
+            except ProjectPaymentMilestone.DoesNotExist:
+                old_status = None
 
         super().save(*args, **kwargs)
 
-        # If milestone status changed to Completed, update payout
         if (is_new and self.status == "Completed") or (old_status != "Completed" and self.status == "Completed"):
             tracking = self.payment_tracking
-            tracking.payout += self.amount 
+            tracking.recalc_payout()
             tracking.save()
 
+
+class Hold(models.Model):
+    payment_tracking = models.ForeignKey(ProjectPaymentTracking, related_name='holds', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    released_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        try:
+            self.payment_tracking.save()
+        except Exception:
+            pass
+
+    def delete(self, *args, **kwargs):
+        payment_tracking = self.payment_tracking
+        super().delete(*args, **kwargs)
+        try:
+            payment_tracking.save()
+        except Exception:
+            pass
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Released"
+        return f"Hold {self.amount} ({status}) on PaymentTracking #{self.payment_tracking_id}"
 
 
 class PaymentTransaction(models.Model):
@@ -258,7 +245,7 @@ class PaymentTransaction(models.Model):
     method = models.CharField(max_length=255, blank=True, null=True)  # e.g., Bank Transfer
     notes = models.TextField(blank=True, null=True)
 
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="transactions_created")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="transactions_created")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -287,10 +274,10 @@ class AdditionalBudgetRequest(models.Model):
     reason = models.TextField(blank=True, null=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="budget_requests_created")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="budget_requests_created")
     created_at = models.DateTimeField(auto_now_add=True)
 
-    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="budget_requests_approved")
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="budget_requests_approved")
     approved_at = models.DateTimeField(null=True, blank=True)
     approval_notes = models.TextField(blank=True, null=True)
 
@@ -343,7 +330,7 @@ class AuditLog(models.Model):
     field_name = models.CharField(max_length=255, blank=True, null=True)
     old_value = models.TextField(blank=True, null=True)
     new_value = models.TextField(blank=True, null=True)
-    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     changed_at = models.DateTimeField(auto_now_add=True)
     note = models.TextField(blank=True, null=True)
 
@@ -358,7 +345,7 @@ class AuditLog(models.Model):
 
 class Notification(models.Model):
     """Simple notification that can be sent to users or consumed by async workers."""
-    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
     title = models.CharField(max_length=255)
     message = models.TextField()
     data = models.JSONField(blank=True, null=True)
@@ -409,7 +396,7 @@ class PaymentHistory(models.Model):
     prev_value = models.TextField(blank=True, null=True)
     new_value = models.TextField(blank=True, null=True)
     changed_at = models.DateTimeField(auto_now_add=True)
-    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         ordering = ["-changed_at"]

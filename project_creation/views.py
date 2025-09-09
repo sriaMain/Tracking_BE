@@ -94,6 +94,7 @@ class ClientPocDetailAPIView(APIView):
 #             serializer.save()
 #             return Response(serializer,status=status.HTTP_201_CREATED)
 #         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+from django.db.models import Max
 
 class ProjectListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -116,8 +117,15 @@ class ProjectListCreateAPIView(APIView):
     def post(self, request):
         serializer = ProjectSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(created_by=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                # Auto-generate project_code
+                last_id = Project.objects.aggregate(last_id=Max('id'))['last_id'] or 0
+                project_code = f"PRJ_{last_id + 1}"
+
+                serializer.save(created_by=request.user, project_code=project_code)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except IntegrityError as e:
+                return Response({"error": "Project name already exists."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
