@@ -36,3 +36,39 @@ def milestone_post_save(sender, instance, created, **kwargs):
         evaluate_and_notify(instance.payment_tracking)
     except Exception:
         pass
+
+
+# signals.py
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from .models import ProjectPaymentTracking, Hold, ProjectPaymentMilestone
+from .services import BudgetMonitorService
+
+@receiver(post_save, sender=ProjectPaymentTracking)
+def on_payment_saved(sender, instance, created, **kwargs):
+    try:
+        BudgetMonitorService.monitor_project(instance.project)
+    except Exception:
+        pass
+
+@receiver(post_save, sender=Hold)
+@receiver(post_delete, sender=Hold)
+def on_hold_changed(sender, instance, **kwargs):
+    # Hold uses foreignkey name 'payment_tracking' or 'project' in your earlier code — handle both
+    payment_tracking = getattr(instance, "payment_tracking", None) or getattr(instance, "project", None)
+    if payment_tracking:
+        try:
+            BudgetMonitorService.monitor_project(payment_tracking.project)
+        except Exception:
+            pass
+
+@receiver(post_save, sender=ProjectPaymentMilestone)
+def on_milestone_saved(sender, instance, created, **kwargs):
+    # When milestone becomes Completed, recalc payout and monitor
+    try:
+        pt = instance.payment_tracking
+        pt.recalc_payout()
+        pt.save()
+        BudgetMonitorService.monitor_project(pt.project)
+    except Exception:
+        pass
