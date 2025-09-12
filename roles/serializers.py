@@ -32,9 +32,14 @@ class PermissionSerializer(serializers.ModelSerializer):
     modified_by = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
+   
+    # created_by = serializers.SerializerMethodField()
+
     class Meta:
         model = Permission
-        fields = '__all__'
+        fields = ['name','created_by', 'modified_by']
+
+        read_only_fields = ['created_by']
 
 
 
@@ -45,7 +50,10 @@ class RolePermissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RolePermission
-        fields = ["role", "permission"]
+        fields = ["role", "permission","role_permission_id"]
+
+  
+
 
     def validate_permission(self, value):
         """
@@ -78,6 +86,9 @@ class RolePermissionSerializer(serializers.ModelSerializer):
 
         return instance
 
+  
+
+
     def to_representation(self, instance):
         """
         Display role name and permission names in response.
@@ -90,6 +101,7 @@ class RolePermissionSerializer(serializers.ModelSerializer):
 
 
 
+
 class UserRoleSerializer(serializers.ModelSerializer):
     created_by = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
@@ -97,6 +109,13 @@ class UserRoleSerializer(serializers.ModelSerializer):
     modified_by = serializers.SlugRelatedField(
         read_only=True, slug_field='username'
     )
+    # created_by_detail = serializers.SlugRelatedField(
+    #     source='created_by', read_only=True, slug_field='username'
+    # )
+    # modified_by_detail = serializers.SlugRelatedField(
+    #     source='modified_by', read_only=True, slug_field='username'
+    # )
+
     class Meta:
         model = UserRole
         fields = '__all__'

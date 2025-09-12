@@ -72,7 +72,18 @@ class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()  # No UniqueValidator here
     otp = serializers.CharField(max_length=6)
     # new_password = serializers.CharField(write_only=True, min_length=6)
+class ForgotSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
 
+    def validate(self, data):
+        """
+        Custom validation to check if passwords match
+        """
+        if data.get('new_password') != data.get('confirm_password'):
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return data
 class NewPassswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     new_password = serializers.CharField(write_only=True)

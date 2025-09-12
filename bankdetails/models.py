@@ -36,11 +36,3 @@ class BankDetails(BaseModel):
         owner = self.organisation or self.client or self.resource
         return f"{self.account_holder} - {self.bank_name} ({owner})"
 
-
-    # # Generic relation
-    # content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    # object_id = models.PositiveIntegerField()
-    # content_object = GenericForeignKey("content_type", "object_id")
-
-    # def __str__(self):
-    #     return f"{self.bank_name} - {self.account_number}"

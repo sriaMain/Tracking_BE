@@ -32,5 +32,6 @@ urlpatterns = [
     path('roles/', include('roles.urls')), 
     path('data/',include('masterdata.urls')), 
     path('bankdetails/',include('bankdetails.urls')),
+    path('tasks/',include('task_creation.urls')),
     
 ]

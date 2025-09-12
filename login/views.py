@@ -5,13 +5,16 @@ from rest_framework import status, permissions
 from django.contrib.auth import authenticate
 from .models import AbstractUser
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserSerializer,RegisterSerializer,LoginSerializer,LogoutSerializer,ForgotPasswordSerializer,ResetPasswordSerializer, NewPassswordSerializer, UserSerializer
+from .serializers import (UserSerializer,RegisterSerializer,LoginSerializer,LogoutSerializer,
+                          ForgotPasswordSerializer,ResetPasswordSerializer, NewPassswordSerializer, UserSerializer, ForgotSerializer)
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.contrib.auth import logout
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from .tasks import send_registration_email_sync
+from django.contrib.auth.hashers import make_password
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 # import logging
 import random, string
@@ -169,50 +172,29 @@ class ResetPasswordView(APIView):
             return Response({'message': 'OTP verified. You can now set a new password.'}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    # from django.core.mail import send_mail
-# from django.contrib.sites.shortcuts import get_current_site
-# from django.urls import reverse
 
-# class ResetPasswordView(APIView):
-#     def post(self, request):
-#         serializer = ResetPasswordSerializer(data=request.data)
-#         if serializer.is_valid():
-#             email = serializer.validated_data.get('email')
-#             otp = serializer.validated_data.get('otp')
 
-#             user = User.objects.filter(email=email).first()
+class ForgotAPIView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request, *args, **kwargs):
+        serializer = ForgotSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#             if not user:
-#                 return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        email = serializer.validated_data['email']
+        new_password = serializer.validated_data['new_password']
 
-#             if user.otp_code != otp:
-#                 return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-#             # ✅ Clear OTP after verification
-#             user.otp_code = None
-#             user.save()
-
-#             # ✅ Get current domain
-#             current_site = get_current_site(request)
-#             domain = current_site.domain  # e.g. localhost:8000 or yourdomain.com
-
-#             # ✅ Generate reset password link (frontend or API)
-#             reset_link = f"http://{domain}/reset-password/?email={email}"
-
-#             # ✅ Send email
-#             send_mail(
-#                 subject='Reset your password',
-#                 message=f'Click the link to reset your password: {reset_link}',
-#                 from_email='noreply@yourapp.com',
-#                 recipient_list=[email],
-#                 fail_silently=False,
-#             )
-
-#             return Response({'message': 'OTP verified. Reset link sent to your email.'}, status=status.HTTP_200_OK)
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    
+        try:
+            user.password = make_password(new_password)
+            user.save()
+            return Response({'message': 'Password reset successfully. Redirecting to login...'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
+  
 
 
 class NewPasswordView(APIView):

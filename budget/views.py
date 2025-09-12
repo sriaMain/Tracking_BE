@@ -34,153 +34,122 @@ from .tasks import recalculate_project_finances, send_budget_alerts
 
 # Create your views here.
     
+# class EstimationCreateAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     authentication_classes = [JWTAuthentication]
+
+   
+#     def post(self, request):
+#         serializer = EstimationSerializer(data=request.data)
+#         if serializer.is_valid():
+#             estimation = serializer.save(created_by=request.user)
+
+#             # Trigger background tasks
+#             recalculate_project_finances.delay(estimation.project.id)
+#             send_budget_alerts.delay(estimation.project.id)
+
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    
+#     def get(self, request, pk=None):
+#         if pk is not None:
+#             estimation = get_object_or_404(ProjectEstimation, pk=pk)
+#             serializer = EstimationSerializer(estimation)
+#             return Response(serializer.data)
+#         else:
+#             estimations = ProjectEstimation.objects.all()
+#             serializer = EstimationSerializer(estimations, many=True)
+#             return Response(serializer.data) 
+    
+#     def put(self, request, project_id, estimation_id):
+#         estimation = get_object_or_404(ProjectEstimation, id=estimation_id, project_id=project_id)
+#         serializer = EstimationSerializer(estimation, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save(modified_by=request.user)
+
+#             # Trigger background tasks
+#             recalculate_project_finances.delay(project_id)
+#             send_budget_alerts.delay(project_id)
+
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class EstimationCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
 
-    # def post(self, request):
-    #     serializer = EstimationSerializer(data=request.data)
-    #     if serializer.is_valid():
-    #        serializer.save(created_by=request.user)
-    #        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    # def post(self, request, pk):
-    #     project = get_object_or_404(Project, id=pk)
-    #     serializer = EstimationSerializer(data=request.data)
-    #     if serializer.is_valid():
-    #         estimation = serializer.save(project=project)
 
-    #         # Trigger background tasks
-    #         recalculate_project_finances.delay(project.id)
-    #         send_budget_alerts.delay(project.id)
-
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     def post(self, request):
         serializer = EstimationSerializer(data=request.data)
         if serializer.is_valid():
-            estimation = serializer.save()
+            estimation = serializer.save(created_by=request.user)
 
-            # Trigger background tasks
-            recalculate_project_finances.delay(estimation.project.id)
-            send_budget_alerts.delay(estimation.project.id)
+            if estimation.project:
+                recalculate_project_finances.delay(estimation.project.id)
+                send_budget_alerts.delay(estimation.project.id)
+            else:
+                return Response({"error": "Estimation must have a project."}, status=status.HTTP_400_BAD_REQUEST)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     
-    def get(self, request):
-        estimations = ProjectEstimation.objects.all()
-        serializer = EstimationSerializer(estimations, many=True)
-        return Response(serializer.data)    
-    # def put(self, request, pk):
-    #     estimation = get_object_or_404(ProjectEstimation, pk=pk)
-    #     serializer = EstimationSerializer(estimation, data=request.data, partial=True)
+    # def post(self, request):
+    #     serializer = EstimationSerializer(data=request.data)
     #     if serializer.is_valid():
-    #         serializer.save(modified_by=request.user)
-    #         return Response(serializer.data)
+    #         estimation = serializer.save(created_by=request.user)
+
+    #         # Trigger background tasks
+    #         recalculate_project_finances.delay(estimation.project.id)
+    #         send_budget_alerts.delay(estimation.project.id)
+
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
     #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    def put(self, request, project_id, estimation_id):
-        estimation = get_object_or_404(ProjectEstimation, id=estimation_id, project_id=project_id)
+    
+    # def get(self, request, pk=None):
+    #     if pk:
+    #         estimation = get_object_or_404(ProjectEstimation, pk=pk)
+    #         serializer = EstimationSerializer(estimation)
+    #     else:
+    #         estimations = ProjectEstimation.objects.all()
+    #         serializer = EstimationSerializer(estimations, many=True)
+        # return Response(serializer.data)
+    
+    def put(self, request, pk):
+        estimation = get_object_or_404(ProjectEstimation, id=pk)
         serializer = EstimationSerializer(estimation, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
 
             # Trigger background tasks
-            recalculate_project_finances.delay(project_id)
-            send_budget_alerts.delay(project_id)
+            recalculate_project_finances.delay(estimation.project_id)
+            send_budget_alerts.delay(estimation.project_id)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    def get(self, request, pk):
-        estimation = get_object_or_404(ProjectEstimation, pk=pk)
-        serializer = EstimationSerializer(estimation)
-        return Response(serializer.data)
+
+
+    # def get(self, request, pk):
+    #     estimation = get_object_or_404(ProjectEstimation, pk=pk)
+    #     serializer = EstimationSerializer(estimation)
+    #     return Response(serializer.data)
+
+    def get(self, request, pk=None):
+        if pk is not None:
+            estimation = get_object_or_404(ProjectEstimation, pk=pk)
+            serializer = EstimationSerializer(estimation)
+            return Response(serializer.data)
+        else:
+            estimations = ProjectEstimation.objects.all()
+            serializer = EstimationSerializer(estimations, many=True)
+            return Response(serializer.data) 
+  
 
     
 
 
-# class PaymentTrackingAPIView(APIView):         2222222222222
-#     permission_classes = [IsAuthenticated]
-#     authentication_classes = [JWTAuthentication]
 
-#     def get(self, request, pk=None):
-#         if pk:
-#             tracking = get_object_or_404(ProjectPaymentTracking, pk=pk)
-#             serializer = ProjectPaymentTrackingSerializer(tracking)
-#             return Response(serializer.data)
-#         else:
-#             tracking = ProjectPaymentTracking.objects.all()
-#             serializer = ProjectPaymentTrackingSerializer(tracking, many=True)
-#             return Response(serializer.data)
-
-#     def post(self, request):
-#         serializer = ProjectPaymentTrackingSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def put(self, request, pk):
-#         tracking = get_object_or_404(ProjectPaymentTracking, pk=pk)
-#         serializer = ProjectPaymentTrackingSerializer(tracking, data=request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def delete(self, request, pk):
-#         tracking = get_object_or_404(ProjectPaymentTracking, pk=pk)
-#         tracking.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-
-# class ProjectPaymentMilestoneAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     authentication_classes = [JWTAuthentication]
-
-#     def get(self, request, pk=None):
-#         if pk:
-#             milestone = get_object_or_404(ProjectPaymentMilestone, pk=pk)
-#             serializer = ProjectPaymentMilestoneSerializer(milestone)
-#             return Response(serializer.data)
-#         else:
-#             milestones = ProjectPaymentMilestone.objects.all()
-#             serializer = ProjectPaymentMilestoneSerializer(milestones, many=True)
-#             return Response(serializer.data)
-
-#     def post(self, request):
-#         serializer = ProjectPaymentMilestoneSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def put(self, request, pk):
-#         milestone = get_object_or_404(ProjectPaymentMilestone, pk=pk)
-#         serializer = ProjectPaymentMilestoneSerializer(milestone, data=request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def delete(self, request, pk):
-#         milestone = get_object_or_404(ProjectPaymentMilestone, pk=pk)
-#         milestone.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)  2222222222222222222
-
-
-# class ProjectPaymentMilestoneAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     authentication_classes = [JWTAuthentication]
-
-#     def post(self, request):
-#         serializer = ProjectPaymentMilestoneSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save(data=request.user)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
     
@@ -234,71 +203,7 @@ class ProjectPaymentTrackingAPIView(APIView):
    
 
 
-# class ProjectEstimationPaymentAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     authentication_classes = [JWTAuthentication]
 
-#     def get(self, request, pk, format=None):
-#         # --- Latest estimation ---
-#         estimation = ProjectEstimation.objects.filter(project_id=pk).last()
-#         if estimation:
-#             estimation_data = {
-#                 "id": estimation.id,
-#                 "estimation_date": estimation.estimation_date,
-#                 "estimation_provider": str(estimation.estimation_provider) if estimation.estimation_provider else None,
-#                 "estimation_review": str(estimation.estimation_review) if estimation.estimation_review else None,
-#                 "initial_estimation_amount": estimation.initial_estimation_amount,
-#                 "approved_estimation": estimation.approved_amount,
-#                 "purchase_order_status": estimation.purchase_order_status,
-#                 "created_at": estimation.created_at,
-#                 "modified_at": estimation.modified_at,
-#                 "created_by": estimation.created_by.id if estimation.created_by else None,
-#                 "modified_by": estimation.modified_by.id if estimation.modified_by else None,
-#             }
-#         else:
-#             estimation_data = None
-
-#         # --- Payment tracking ---
-#         payments = ProjectPaymentTracking.objects.filter(project_id=pk)
-#         payment_list = []
-
-#         for payment in payments:
-#             milestones = payment.milestones.all() if hasattr(payment, "milestones") else []
-#             milestone_list = [
-#                 {"id": m.id, "name": m.name, "amount": m.amount, "due_date": m.due_date}
-#                 for m in milestones
-#             ]
-
-#             active_holds = payment.holds.filter(is_active=True) if hasattr(payment, "holds") else []
-#             total_hold_amount = active_holds.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-#             holds_list = [
-#                 {"id": h.id, "amount": h.amount, "is_active": h.is_active, "created_at": h.created_at, "released_at": h.released_at}
-#                 for h in payment.holds.all()
-#             ]
-
-#             payment_list.append({
-#                 "id": payment.id,
-#                 "payment_type": payment.payment_type,
-#                 "other_payment_type": getattr(payment, "other_payment_type", None),  # safe fallback
-#                 "approved_budget": payment.approved_budget,
-#                 "additional_amount": payment.additional_amount,
-#                 "payout": payment.payout,
-#                 "retention_amount": payment.retention_amount,
-#                 "penalty_amount": payment.penalty_amount,
-#                 "total_available_budget": payment.total_available_budget,
-#                 "total_milestones_amount": payment.total_milestones_amount,
-#                 "completed_milestones_amount": payment.completed_milestones_amount,
-#                 "pending": payment.pending,
-#                 "total_hold_amount": total_hold_amount,
-#                 "holds": holds_list,
-#                 "created_at": payment.created_at,
-#                 "modified_at": payment.modified_at,
-#                 "created_by": payment.created_by.id if payment.created_by else None,
-#                 "modified_by": payment.modified_by.id if payment.modified_by else None,
-#                 "milestones": milestone_list,
-#             })
-
-#         return Response({"estimation": estimation_data, "payments": payment_list}, status=status.HTTP_200_OK)
 
 
 class ProjectEstimationPaymentAPIView(APIView):
@@ -358,153 +263,9 @@ class ProjectEstimationPaymentAPIView(APIView):
 
 # Payment endpoints
 class PaymentListCreateAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
-#     def get(self, request):
-#         qs = ProjectPaymentTracking.objects.all()
-#         ser = ProjectPaymentTrackingSerializer(qs, many=True)
-#         return Response(ser.data)
-
-
-#     def post(self, request):
-#         ser = ProjectPaymentTrackingSerializer(data=request.data, context={"request": request})
-#         ser.is_valid(raise_exception=True)
-#         p = create_payment(ser.validated_data, request.user)
-#         return Response(ProjectPaymentTrackingSerializer(p).data, status=status.HTTP_201_CREATED)
-
-
-# class PaymentDetailAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     authentication_classes = [JWTAuthentication]    
-
-#     def get_object(self, pk):
-#         return get_payment(pk)
-
-#     def get(self, request, pk):
-#         p = self.get_object(pk)
-#         return Response(ProjectPaymentTrackingSerializer(p).data)
-
-#     def patch(self, request, pk):
-#         ser = ProjectPaymentTrackingSerializer(instance=self.get_object(pk), data=request.data, partial=True, context={"request": request})
-#         ser.is_valid(raise_exception=True)
-#         p = update_payment(pk, ser.validated_data, request.user)
-#         return Response(ProjectPaymentTrackingSerializer(p).data)
-        
-#     def put(self, request, pk):
-#         serializer = ProjectPaymentTrackingUpdateSerializer(
-#             instance=self.get_object(pk),
-#             data=request.data,
-#             partial=False,   # full update
-#             context={"request": request},
-#         )
-#         serializer.is_valid(raise_exception=True)
-#         updated_instance = update_payment(pk, serializer.validated_data, request.user)
-#         return Response(ProjectPaymentTrackingSerializer(updated_instance).data)
-    
- 
-
-
-    # def delete(self, request, pk):
-    #     obj = get_payment(pk)
-    #     obj.delete()
-    #     return Response({"detail": "Deleted"}, status=status.HTTP_204_NO_CONTENT)
-
-
-
-
-
-
-    # def post(self, request):
-    #     """Create a payment record for a project"""
-    #     data = request.data.copy()
-    #     project_id = data.get("project")
-    #     if not project_id:
-    #         return Response({"error": "project is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     project = get_object_or_404(Project, pk=project_id)
-
-    #     try:
-    #         approved_budget = Decimal(str(data.get("approved_budget", "0.00")))
-    #     except Exception:
-    #         return Response({"error": "approved_budget invalid"}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     validation = validate_payment_against_policy(project, approved_budget, user=request.user)
-    #     if not validation["allowed"]:
-    #         return Response({"error": validation["message"]}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     data["approved_budget"] = str(validation["adjusted_amount"])
-    #     serializer = ProjectPaymentTrackingSerializer(data=data)
-    #     serializer.is_valid(raise_exception=True)
-    #     serializer.save()
-
-    #     BudgetMonitorService.monitor_project(project)
-
-    #     return Response(
-    #         {"message": validation["message"], "payment": serializer.data},
-    #         status=status.HTTP_201_CREATED,
-    #     )
-
-    # def put(self, request, pk):
-    #     """Update an existing payment record"""
-    #     payment = get_object_or_404(ProjectPaymentTracking, pk=pk)
-    #     project = payment.project
-    #     data = request.data.copy()
-
-    #     if "approved_budget" in data:
-    #         try:
-    #             approved_budget = Decimal(str(data.get("approved_budget", "0.00")))
-    #         except Exception:
-    #             return Response({"error": "approved_budget invalid"}, status=status.HTTP_400_BAD_REQUEST)
-
-    #         validation = validate_payment_against_policy(project, approved_budget, user=request.user)
-    #         if not validation["allowed"]:
-    #             return Response({"error": validation["message"]}, status=status.HTTP_400_BAD_REQUEST)
-    #         data["approved_budget"] = str(validation["adjusted_amount"])
-
-    #     serializer = ProjectPaymentTrackingSerializer(payment, data=data, partial=True)
-    #     serializer.is_valid(raise_exception=True)
-    #     serializer.save()
-
-    #     BudgetMonitorService.monitor_project(project)
-    #     return Response({"message": "Updated", "payment": serializer.data})
-    # def post(self, request):
-    #     """Create a payment record for a project"""
-    #     data = request.data.copy()
-
-    #     # ✅ Validate project exists
-    #     project_id = data.get("project")
-    #     if not project_id:
-    #         return Response({"error": "project is required"}, status=status.HTTP_400_BAD_REQUEST)
-    #     project = get_object_or_404(Project, id=project_id)
-
-    #     # ✅ Validate approved_budget if provided
-    #     try:
-    #         approved_budget = Decimal(str(data.get("approved_budget", "0.00")))
-    #     except Exception:
-    #         return Response({"error": "approved_budget invalid"}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     validation = validate_payment_against_policy(project, approved_budget, user=request.user)
-    #     if not validation["allowed"]:
-    #         return Response({"error": validation["message"]}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     # Adjust approved budget before saving
-    #     data["approved_budget"] = str(validation["adjusted_amount"])
-
-    #     serializer = ProjectPaymentTrackingSerializer(data=data)
-    #     if serializer.is_valid():
-    #         payment = serializer.save(project=project)
-
-    #         # Run sync monitor service + async background tasks
-    #         BudgetMonitorService.monitor_project(project)
-    #         recalculate_project_finances.delay(project.id)
-    #         send_budget_alerts.delay(project.id)
-
-    #         return Response(
-    #             {"message": validation["message"], "payment": serializer.data},
-    #             status=status.HTTP_201_CREATED,
-    #         )
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     def post(self, request):
         try:
             serializer = ProjectPaymentTrackingSerializer(data=request.data)
@@ -518,7 +279,7 @@ class PaymentListCreateAPIView(APIView):
                     return Response({"error": validation["message"]}, status=status.HTTP_400_BAD_REQUEST)
 
                 # Save payment with adjusted budget
-                payment = serializer.save(approved_budget=Decimal(validation["adjusted_amount"]))
+                payment = serializer.save(approved_budget=Decimal(validation["adjusted_amount"]), created_by = request.user)
 
                 # Run background tasks
                 BudgetMonitorService.monitor_project(project)
@@ -665,12 +426,7 @@ class MilestoneDetailAPIView(APIView):
         m = ProjectPaymentMilestone.objects.get(pk=pk)
         return Response(ProjectPaymentMilestoneSerializer(m).data)
 
-    # def patch(self, request, pk):
-    #     ser = ProjectPaymentMilestoneSerializer(instance=ProjectPaymentMilestone.objects.get(pk=pk), data=request.data, partial=True, context={"request": request})
-    #     ser.is_valid(raise_exception=True)
-    #     m = update_milestone(pk, ser.validated_data, request.user)
-    #     notify_milestone_update(m, [m.payment_tracking.created_by.email] if m.payment_tracking.created_by else [])
-    #     return Response(ProjectPaymentMilestoneSerializer(m).data)
+   
     def put(self, request, pk):
         milestone = ProjectPaymentMilestone.objects.get(pk=pk)
         milestone.status = request.data.get("status", milestone.status)
@@ -767,17 +523,41 @@ class AdditionalRequestListCreateAPIView(APIView):
         return Response(ser.data)
 
 
+    # def post(self, request):
+    #     # create budget request
+    #     req = AdditionalBudgetRequest.objects.create(
+    #         payment_tracking_id=request.data["payment_tracking"],
+    #         requested_amount=request.data["requested_amount"],
+    #         reason=request.data.get("reason", ""),
+    #         created_by=request.user,
+    #     )
+    #     # send email
+    #     notify_budget_request(req)
+    #     return Response({"msg": "Budget request created"}, status=status.HTTP_201_CREATED)
+
     def post(self, request):
+        payment_tracking_id = request.data.get("payment_tracking")
+        requested_amount = request.data.get("requested_amount")
+        reason = request.data.get("reason", "")
+
+        if not payment_tracking_id:
+            return Response({"error": "payment_tracking field is required"}, status=400)
+        if not requested_amount:
+            return Response({"error": "requested_amount field is required"}, status=400)
+
         # create budget request
         req = AdditionalBudgetRequest.objects.create(
-            payment_tracking_id=request.data["payment_tracking"],
-            requested_amount=request.data["requested_amount"],
-            reason=request.data.get("reason", ""),
+            payment_tracking_id=payment_tracking_id,
+            requested_amount=requested_amount,
+            reason=reason,
             created_by=request.user,
         )
+
         # send email
         notify_budget_request(req)
+
         return Response({"msg": "Budget request created"}, status=status.HTTP_201_CREATED)
+
    
 
 class AdditionalRequestApproveAPIView(APIView):
@@ -877,7 +657,7 @@ class NotificationListAPIView(APIView):
     authentication_classes = [JWTAuthentication]
 
     def get(self, request):
-        qs = Notification.objects.filter(recipient=request.user)
+        qs = Notification.objects.filter(user=request.user)
         ser = NotificationSerializer(qs, many=True)
         return Response(ser.data)
 

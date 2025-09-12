@@ -22,158 +22,54 @@ from django.db.models import Sum, Value, DecimalField
 # Create your models here.
 
 
-class ProjectEstimation(BaseModel):
-    project = models.ForeignKey(Project, on_delete=models.SET_NULL, related_name="estimations", null=True, blank=True)
-    estimation_date = models.DateField()
-    estimation_provider = models.ForeignKey(UserRole, on_delete=models.SET_NULL, related_name="estimations_provided", null=True, blank=True)
-    estimation_review = models.ForeignKey(UserRole, on_delete=models.SET_NULL, related_name="estimations_reviewed", null=True, blank=True)
-    estimation_review_by_client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name="client_estimations")
+# class ProjectEstimation(BaseModel):
+#     project = models.ForeignKey(Project, on_delete=models.SET_NULL, related_name="estimations", null=True, blank=True)
+#     estimation_date = models.DateField()
+#     estimation_provider = models.ForeignKey(UserRole, on_delete=models.SET_NULL, related_name="estimations_provided", null=True, blank=True)
+#     estimation_review = models.ForeignKey(UserRole, on_delete=models.SET_NULL, related_name="estimations_reviewed", null=True, blank=True)
+#     estimation_review_by_client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name="client_estimations")
     
-    version = models.PositiveIntegerField(default=1)
-    initial_estimation_amount = models.DecimalField(max_digits=12, decimal_places=2)
-    approved_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    is_approved = models.BooleanField(default=False)
+#     version = models.PositiveIntegerField(default=1)
+#     initial_estimation_amount = models.DecimalField(max_digits=12, decimal_places=2)
+#     approved_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+#     is_approved = models.BooleanField(default=False)
 
-    PURCHASE_ORDER_STATUS = [
-        ('Received', 'Received'),
-        ('Pending', 'Pending'),
-        ('Rejected', 'Rejected'),
-        ('Cancelled', 'Cancelled'),
-    ]
-    purchase_order_status = models.CharField(max_length=50, choices=PURCHASE_ORDER_STATUS, default='Pending')
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="estimations_created")
-    modified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="estimations_modified")
-
-    class Meta:
-        # unique_together = ("project", "version")
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        status = " (Approved)" if self.is_approved else ""
-        return f"{self.project.project_name} - v{self.version}{status}"\
-    @classmethod
-    def latest_estimation(cls, project):
-        """Get the latest approved estimation for a project"""
-        return cls.objects.filter(project=project, is_approved=True).order_by("-version").first()
-
-
-
-
-# class ChangeRequest(models.Model):
-#     STATUS_PENDING = "Pending"
-#     STATUS_APPROVED = "Approved"
-#     STATUS_REJECTED = "Rejected"
-
-#     STATUS_CHOICES = [
-#         (STATUS_PENDING, "Pending"),
-#         (STATUS_APPROVED, "Approved"),
-#         (STATUS_REJECTED, "Rejected"),
+#     PURCHASE_ORDER_STATUS = [
+#         ('Received', 'Received'),
+#         ('Pending', 'Pending'),
+#         ('Rejected', 'Rejected'),
+#         ('Cancelled', 'Cancelled'),
 #     ]
-
-#     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="change_requests")
-#     requested_amount = models.DecimalField(max_digits=18, decimal_places=2)
-#     reason = models.TextField()
-#     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
-
-#     requested_by = models.ForeignKey(
-#         User, on_delete=models.SET_NULL, null=True, related_name="cr_requested"
-#     )
-#     reviewed_by = models.ForeignKey(
-#         User, on_delete=models.SET_NULL, null=True, blank=True, related_name="cr_reviewed"
-#     )
-#     reviewed_at = models.DateTimeField(null=True, blank=True)
+#     purchase_order_status = models.CharField(max_length=50, choices=PURCHASE_ORDER_STATUS, default='Pending')
 
 #     created_at = models.DateTimeField(auto_now_add=True)
 #     modified_at = models.DateTimeField(auto_now=True)
-
-#     # optional correlation id for dedupe/intent
-#     correlation_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+#     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="estimations_created")
+#     modified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="estimations_modified")
 
 #     class Meta:
+#         # unique_together = ("project", "version")
 #         ordering = ["-created_at"]
 
-#     def _str_(self):
-#         return f"CR #{self.id} for {getattr(self.project, 'project_name', self.project_id)} - {self.requested_amount}"
 
-#     def approve(self, reviewer_user):
-#         from .services import BudgetMonitorService
-
-#         if self.status != self.STATUS_PENDING:
-#             raise ValueError("Only pending CRs can be approved")
-
-#         with transaction.atomic():
-#             self.status = self.STATUS_APPROVED
-#             self.reviewed_by = reviewer_user
-#             self.reviewed_at = timezone.now()
-#             self.save(update_fields=["status", "reviewed_by", "reviewed_at", "modified_at"])
-
-#             # create new estimation row (versioned) to preserve history
-#             latest = ProjectEstimation.objects.filter(project=self.project).order_by("-version", "-created_at").first()
-
-#             if latest:
-#                 version = (latest.version or 1) + 1
-#                 base_initial = latest.initial_estimation_amount or Decimal("0.00")
-#                 base_approved = latest.approved_amount if latest.approved_amount is not None else base_initial
-#             else:
-#                 version = 1
-#                 base_initial = Decimal("0.00")
-#                 base_approved = Decimal("0.00")
-
-#             new_approved_amount = (base_approved or Decimal("0.00")) + (self.requested_amount or Decimal("0.00"))
-
-#             ProjectEstimation.objects.create(
-#                 project=self.project,
-#                 estimation_date=timezone.now().date(),
-#                 estimation_provider=None,
-#                 estimation_review=None,
-#                 version=version,
-#                 initial_estimation_amount=base_initial,
-#                 approved_amount=new_approved_amount,
-#                 is_approved=True,
-#                 purchase_order_status="Received",
-#                 created_by=reviewer_user,
-#                 modified_by=reviewer_user,
-#             )
-
-#             # audit
-#             AuditLog.log(
-#                 self.project,
-#                 reviewer_user,
-#                 "change_request.approved",
-#                 {
-#                     "cr_id": self.id,
-#                     "requested_amount": str(self.requested_amount),
-#                     "new_approved_amount": str(new_approved_amount),
-#                 },
-#             )
-
-#             # trigger immediate monitoring after approval
-#             BudgetMonitorService.monitor_project(self.project)
-
-#     def reject(self, reviewer_user):
-#         if self.status != self.STATUS_PENDING:
-#             raise ValueError("Only pending CRs can be rejected")
-
-#         self.status = self.STATUS_REJECTED
-#         self.reviewed_by = reviewer_user
-#         self.reviewed_at = timezone.now()
-#         self.save(update_fields=["status", "reviewed_by", "reviewed_at", "modified_at"])
-
-#         AuditLog.log(
-#             self.project, reviewer_user, "change_request.rejected", {"cr_id": self.id}
-#         )
+#     def __str__(self):
+#         status = " (Approved)" if self.is_approved else ""
+#         project_name = self.project.project_name if self.project else "No Project"
+#         return f"{project_name} - v{self.version}{status}"
+#     @classmethod
+#     def latest_estimation(cls, project):
+#         """Get the latest approved estimation for a project"""
+#         return cls.objects.filter(project=project, is_approved=True).order_by("-version").first()
 
 
-# Prefer importing Project from your project_creation app.
-# If you DO NOT have a separate Project model, uncomment the local Project class below.
-try:
-    from project_creation.models import Project
-except Exception:
+
+
+
+# try:
+#     from project_creation.models import Project
+# except Exception:
   
-    raise
+#     raise
 
 
 CURRENCY_CHOICES = [
@@ -181,6 +77,254 @@ CURRENCY_CHOICES = [
     ("USD", "US Dollar"),
     ("EUR", "Euro"),
 ]
+
+class ProjectEstimation(models.Model):
+    STATUS_PENDING = "Pending"
+    STATUS_APPROVED = "Approved"
+    STATUS_RECEIVED = "Received"
+    STATUS_REJECTED = "Rejected"
+    STATUS_CANCELLED = "Cancelled"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_RECEIVED, "Received"),
+        (STATUS_REJECTED, "Rejected"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    project = models.ForeignKey(
+        Project, on_delete=models.SET_NULL, null=True, blank=True, related_name="estimations"
+    )
+    estimation_provider = models.ForeignKey(
+        UserRole, on_delete=models.SET_NULL, null=True, blank=True, related_name="estimations_provided"
+    )
+    estimation_review = models.ForeignKey(
+        UserRole, on_delete=models.SET_NULL, null=True, blank=True, related_name="estimations_reviewed"
+    )
+    estimation_review_by_client = models.ForeignKey(
+        Client, on_delete=models.SET_NULL, null=True, blank=True, related_name="client_estimations"
+    )
+
+    estimation_date = models.DateField(default=timezone.now)
+    version = models.PositiveIntegerField(default=1)
+
+    initial_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    additional_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    total_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    pending_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    received_amount = models.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+
+    is_approved = models.BooleanField(default=False)
+    purchase_order_status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name="estimations_created"
+    )
+    modified_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name="estimations_modified"
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def _str_(self):
+        return f"{self.project.project_name if self.project else 'Project'} - v{self.version} ({self.purchase_order_status})"
+
+    def clean(self):
+        """Validate data consistency"""
+        super().clean()
+        
+        # Ensure received amount doesn't exceed total
+        if self.received_amount and self.total_amount and self.received_amount > self.total_amount:
+            raise ValidationError("Received amount cannot exceed total amount")
+        
+        # Validate status consistency
+        if self.purchase_order_status == self.STATUS_RECEIVED and self.pending_amount > 0:
+            raise ValidationError("Received status requires pending amount to be zero")
+
+    def save(self, *args, **kwargs):
+        # Always recalculate amounts to ensure consistency
+        self.total_amount = (self.initial_amount or Decimal("0.00")) + (self.additional_amount or Decimal("0.00"))
+        self.pending_amount = self.total_amount - (self.received_amount or Decimal("0.00"))
+        
+        # Ensure pending amount is never negative
+        if self.pending_amount < 0:
+            self.pending_amount = Decimal("0.00")
+
+        # Auto-update status based on business logic
+        if self.pending_amount == 0 and self.total_amount > 0:
+            self.purchase_order_status = self.STATUS_RECEIVED
+        elif self.is_approved and self.purchase_order_status not in [self.STATUS_RECEIVED, self.STATUS_REJECTED, self.STATUS_CANCELLED]:
+            self.purchase_order_status = self.STATUS_APPROVED
+        elif not self.is_approved and self.purchase_order_status == self.STATUS_APPROVED:
+            self.purchase_order_status = self.STATUS_PENDING
+
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def latest_estimation(cls, project):
+        return cls.objects.filter(project=project).order_by("-version").first()
+
+    @transaction.atomic
+    def receive_money(self, receiver, amount=None):
+        """
+        Record money received for this estimation
+        """
+        if self.purchase_order_status in [self.STATUS_REJECTED, self.STATUS_CANCELLED]:
+            raise ValueError(f"Cannot receive money for {self.purchase_order_status.lower()} estimation")
+
+        # Use pending amount if no specific amount provided
+        amount_to_receive = amount or self.pending_amount
+        
+        if amount_to_receive <= 0:
+            raise ValueError("Amount to receive must be positive")
+        
+        if amount_to_receive > self.pending_amount:
+            raise ValueError(f"Cannot receive {amount_to_receive}. Only {self.pending_amount} is pending")
+
+        # Update amounts
+        self.received_amount += amount_to_receive
+        self.modified_by = receiver
+        self.modified_at = timezone.now()
+        
+        # Save will automatically recalculate pending_amount and update status
+        self.save(update_fields=[
+            "received_amount", "pending_amount", "purchase_order_status", 
+            "modified_by", "modified_at", "total_amount"
+        ])
+
+    @transaction.atomic
+    def approve_estimation(self, approver):
+        """Approve the estimation"""
+        if self.purchase_order_status in [self.STATUS_REJECTED, self.STATUS_CANCELLED, self.STATUS_RECEIVED]:
+            raise ValueError(f"Cannot approve {self.purchase_order_status.lower()} estimation")
+        
+        self.is_approved = True
+        self.modified_by = approver
+        self.save()
+
+    @transaction.atomic
+    def reject_estimation(self, rejector, reason=None):
+        """Reject the estimation"""
+        if self.purchase_order_status == self.STATUS_RECEIVED:
+            raise ValueError("Cannot reject received estimation")
+        
+        self.purchase_order_status = self.STATUS_REJECTED
+        self.is_approved = False
+        self.modified_by = rejector
+        self.save()
+
+    @transaction.atomic
+    def cancel_estimation(self, canceller):
+        """Cancel the estimation"""
+        if self.purchase_order_status == self.STATUS_RECEIVED:
+            raise ValueError("Cannot cancel received estimation")
+        
+        self.purchase_order_status = self.STATUS_CANCELLED
+        self.is_approved = False
+        self.modified_by = canceller
+        self.save()
+
+    @transaction.atomic
+    def fix_data_consistency(self):
+        """
+        Method to fix existing inconsistent data
+        Call this to repair records with inconsistent amounts
+        """
+        # Recalculate all amounts
+        self.total_amount = (self.initial_amount or Decimal("0.00")) + (self.additional_amount or Decimal("0.00"))
+        
+        # If status is "Received" but pending_amount > 0, fix it
+        if self.purchase_order_status == self.STATUS_RECEIVED:
+            # Set received_amount to total_amount to make it consistent
+            self.received_amount = self.total_amount
+            self.pending_amount = Decimal("0.00")
+        else:
+            # Recalculate pending based on current received amount
+            self.pending_amount = self.total_amount - (self.received_amount or Decimal("0.00"))
+            if self.pending_amount < 0:
+                self.pending_amount = Decimal("0.00")
+        
+        # Save without triggering auto-status updates (to preserve manual status changes)
+        super().save()
+
+    @property 
+    def status_with_validation(self):
+        """Returns status with consistency validation"""
+        is_consistent = True
+        issues = []
+        
+        # Check if status is "Received" but there's pending amount
+        if self.purchase_order_status == self.STATUS_RECEIVED and self.pending_amount > 0:
+            is_consistent = False
+            issues.append("Status is 'Received' but pending amount > 0")
+        
+        # Check if received exceeds total
+        if self.received_amount > self.total_amount:
+            is_consistent = False
+            issues.append("Received amount exceeds total amount")
+        
+        # Check if pending calculation is correct
+        calculated_pending = self.total_amount - self.received_amount
+        if abs(self.pending_amount - calculated_pending) > 0.01:
+            is_consistent = False
+            issues.append("Pending amount calculation is incorrect")
+        
+        return {
+            'status': self.purchase_order_status,
+            'is_consistent': is_consistent,
+            'issues': issues,
+            'pending_amount': self.pending_amount,
+            'received_amount': self.received_amount,
+            'total_amount': self.total_amount
+        }
+
+    @property
+    def payment_summary(self):
+        """Get a summary of payment status"""
+        percentage_received = 0
+        if self.total_amount > 0:
+            percentage_received = (self.received_amount / self.total_amount) * 100
+
+        return {
+            'total_amount': self.total_amount,
+            'received_amount': self.received_amount,
+            'pending_amount': self.pending_amount,
+            'percentage_received': round(percentage_received, 2),
+            'is_fully_paid': self.pending_amount == 0,
+            'status': self.purchase_order_status
+        }
+
+    @classmethod
+    def find_inconsistent_records(cls):
+        """Find all records with data inconsistencies"""
+        return cls.objects.filter(
+            models.Q(purchase_order_status=cls.STATUS_RECEIVED, pending_amount__gt=0) |
+            models.Q(received_amount__gt=models.F('total_amount')) |
+            models.Q(pending_amount__lt=0)
+        )
+
+    @classmethod
+    @transaction.atomic
+    def bulk_fix_inconsistent_data(cls):
+        """Fix all inconsistent records in the database"""
+        inconsistent = cls.find_inconsistent_records()
+        fixed_count = 0
+        
+        for estimation in inconsistent:
+            try:
+                estimation.fix_data_consistency()
+                fixed_count += 1
+            except Exception as e:
+                print(f"Error fixing estimation {estimation.id}: {e}")
+        
+        return fixed_count
+
 class ProjectPaymentTracking(models.Model):
     COST_TYPE_CHOICES = [
         ("Manpower", "Manpower"),
@@ -218,67 +362,12 @@ class ProjectPaymentTracking(models.Model):
     def __str__(self):
         return f"{getattr(self.project, 'project_name', self.project_id)} - {self.payment_type} (#{self.id})"
 
-    # @property
-    # def total_available_budget(self) -> Decimal:
-    #     return (self.approved_budget or Decimal("0.00")) + (self.additional_amount or Decimal("0.00"))
-
-    # @property
-    # def total_milestones_amount(self) -> Decimal:
-    #     return self.milestones.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-
-    # @property
-    # def completed_milestones_amount(self) -> Decimal:
-    #     return self.milestones.filter(status="Completed").aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-
-    # @property
-    # def total_holds_amount(self) -> Decimal:
-    #     # expects related_name 'holds' on Hold model
-    #     return self.holds.filter(is_active=True).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-
-    # @property
-    # def pending(self) -> Decimal:
-    #     return (
-    #         self.total_available_budget
-    #         - (self.payout or Decimal("0.00"))
-    #         - self.total_holds_amount
-    #         - (self.retention_amount or Decimal("0.00"))
-    #         + (self.penalty_amount or Decimal("0.00"))
-    #     )
-
-    # @property
-    # def budget_utilization_percentage(self) -> Decimal:
-    #     if self.total_available_budget == Decimal("0.00"):
-    #         return Decimal("0.00")
-    #     used = (self.payout or Decimal("0.00")) + (self.retention_amount or Decimal("0.00")) + self.total_holds_amount
-    #     return (used / self.total_available_budget) * Decimal("100.00")
-
-    # @property
-    # def is_budget_exceeded(self) -> bool:
-    #     return self.total_milestones_amount > self.total_available_budget
-
-    # def recalc_payout(self):
-    #     total = self.milestones.filter(status="Completed").aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-    #     self.payout = total
-
-    # def save(self, *args, **kwargs):
-    #     try:
-    #         self.recalc_payout()
-    #     except Exception:
-    #         pass
-    #     self.budget_exceeded_approved = self.is_budget_exceeded
-    #     super().save(*args, **kwargs)
+   
     @property
     def total_available_budget(self) -> Decimal:
         return (self.approved_budget or Decimal("0.00")) + (self.additional_amount or Decimal("0.00"))
 
-    # @property
-    # def total_milestones_amount(self) -> Decimal:
-    #     if not self.pk:  # avoid querying before object is saved
-    #         return Decimal("0.00")
-    #     total = self.milestones.aggregate(
-    #         total=Coalesce(Sum("amount"), Value(Decimal("0.00")), output_field=DecimalField())
-    #     )["total"]
-    #     return Decimal(total or 0)
+    
     @property
     def total_milestones_amount(self) -> Decimal:
         if not self.pk:
@@ -513,40 +602,7 @@ class AdditionalBudgetRequest(models.Model):
         self.save()
         return self
 
-# class AuditLog(models.Model):
-#     """Generic audit log for key models and fields"""
-#     model_name = models.CharField(max_length=255)
-#     object_id = models.CharField(max_length=255)   # store PK as string
-#     field_name = models.CharField(max_length=255, blank=True, null=True)
-#     old_value = models.TextField(blank=True, null=True)
-#     new_value = models.TextField(blank=True, null=True)
-#     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-#     changed_at = models.DateTimeField(auto_now_add=True)
-#     note = models.TextField(blank=True, null=True)
 
-#     class Meta:
-#         ordering = ["-changed_at"]
-#         verbose_name = "Audit Log"
-#         verbose_name_plural = "Audit Logs"
-
-#     def __str__(self):
-#         return f"{self.model_name}#{self.object_id} {self.field_name} @ {self.changed_at}"
-
-
-# class Notification(models.Model):
-#     """Simple notification that can be sent to users or consumed by async workers."""
-#     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
-#     title = models.CharField(max_length=255)
-#     message = models.TextField()
-#     data = models.JSONField(blank=True, null=True)
-#     is_read = models.BooleanField(default=False)
-#     created_at = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         ordering = ["-created_at"]
-
-#     def __str__(self):
-#         return f"Notif to {self.recipient} - {self.title}"
 
 
 class Rule(models.Model):

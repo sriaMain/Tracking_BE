@@ -1,31 +1,3 @@
-# from rest_framework import serializers
-# from django.contrib.contenttypes.models import ContentType
-# from .models import BankDetails
-
-
-
-
-# class BankDetailSerializer(serializers.ModelSerializer):
-#     content_type = serializers.CharField(write_only=True)  # "organisation", "client", "resource"
-
-#     class Meta:
-#         model = BankDetails
-#         fields = ["id", "account_number", "ifsc_code", "bank_name", "content_type", "object_id"]
-
-#     def create(self, validated_data):
-#         content_type_name = validated_data.pop("content_type")
-#         try:
-#             ct = ContentType.objects.get(model=content_type_name.lower())
-#         except ContentType.DoesNotExist:
-#             raise serializers.ValidationError({"content_type": "Invalid content type"})
-#         validated_data["content_type"] = ct
-#         return BankDetails.objects.create(**validated_data)
-
-#     def to_representation(self, instance):
-#         rep = super().to_representation(instance)
-#         rep["content_type"] = instance.content_type.model  # show model name
-#         rep["related_object"] = str(instance.content_object)  # show related obj name
-#         return rep
 
 
 

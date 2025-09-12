@@ -41,7 +41,7 @@ class ClientPOC(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="pocs")
     name = models.CharField(max_length=255)
     email = models.EmailField()
-    phone = models.CharField(max_length=20, blank=True, null=True)
+    phone = models.CharField(max_length=14, blank=True, null=True)
     designation = models.CharField(max_length=100, blank=True, null=True)
     is_primary = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -60,6 +60,20 @@ class ClientPOC(models.Model):
 
 
 class Project(models.Model):
+    class StatusChoices(models.TextChoices):
+        REQUIREMENTS = "Requirements", "Requirements"          #Initial phase where requirements are gathered, analyzed, and documented.
+        Planning = "Planning", "Planning"                      #Defining scope, creating schedules, assigning resources, and planning deliverables.
+        DESIGN = "Design", "Design"                            #Creating architecture, UI/UX designs, and technical specifications.        
+        DEVELOPMENT = "Development", "Development"             #Actual coding, building, and implementation of planned features.
+        # READY_FOR_TEST = "Ready for Test", "Ready for Test"    #Development completed, waiting for QA/testing team to validate functionality.
+        TESTING = "Testing", "Testing"                         #Quality assurance phase where the product is tested for bugs, issues, and performance. 
+        UAT = "UAT", "UAT"                                     #User Acceptance Testing by end-users to validate the product meets their needs. 
+        PRODUCTION = "Production", "Production"                #The project or feature is deployed live for end-users.   
+        MAINTENANCE = "Maintenance", "Maintenance"             #Ongoing support, bug fixes, updates, and improvements after launch.   
+        REVIEW = "Review", "Review"                            #Work is under peer review, code review, or management approval before moving ahead.   
+        COMPLETED = "Completed", "Completed"                   #Work is fully finished, approved, and closed successfully.
+        ON_HOLD = "On Hold", "On Hold"                         #Work is paused temporarily due to resource, priority, or dependency issues.     
+        CANCELLED = "Cancelled", "Cancelled" 
     PRIORITY_CHOICES = [
         ('Low', 'Low'),
         ('Medium', 'Medium'),
@@ -76,6 +90,7 @@ class Project(models.Model):
     poc = models.ForeignKey(ClientPOC, on_delete=models.SET_NULL, null=True, blank=True, related_name="projects")
     project_code = models.CharField(max_length=100)
     project_name = models.CharField(max_length=255,unique=True)
+    status = models.CharField(max_length=50, choices=StatusChoices.choices, default=StatusChoices.Planning)
     # type = models.CharField(max_length=100)
     summary = models.TextField()
     accountant= models.ForeignKey(UserRole, on_delete=models.SET_NULL, related_name="project_accountant", null=True,blank=True)
@@ -94,17 +109,8 @@ class Project(models.Model):
     modified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='projects_modified_by')    
 
 
-    # def clean(self):
-    #     from django.core.exceptions import ValidationError
-    #     if self.poc and self.poc.client != self.client:
-    #         raise ValidationError("POC must belong to the same client as the project")
-        
-    # def clean(self):
-    #     if self.end_date < self.start_date:
-    #         raise ValidationError("End date cannot be earlier than start date.")
-    #     if self.estimated_date and self.start_date and self.estimated_date < self.start_date:
-    #         raise ValidationError("Estimated date cannot be before start date.")
-
+    def __str__(self):
+        return self.project_name
     def clean(self):
         from django.core.exceptions import ValidationError
         if self.poc and self.client and self.poc.client != self.client:
@@ -113,3 +119,14 @@ class Project(models.Model):
             raise ValidationError("End date cannot be earlier than start date.")
         if self.estimated_date and self.start_date and self.estimated_date < self.start_date:
             raise ValidationError("Estimated date cannot be before start date.")
+        
+class ProjectUser(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="assigned_users")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="assigned_projects")
+    assigned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('project', 'user')  # Prevent duplicate assignment
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.project.project_name}"

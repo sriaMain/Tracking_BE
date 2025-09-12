@@ -1,24 +1,3 @@
-# from django.urls import path
-# from .views import EstimationCreateAPIView, PaymentTrackingAPIView, ProjectPaymentMilestoneAPIView, ProjectEstimationAPIView, ProjectPaymentTrackingAPIView, ProjectEstimationPaymentAPIView
-
-# urlpatterns = [
-  
-  
-#     path('estimation/create/', EstimationCreateAPIView.as_view(), name='estimation-create'),
-#     path('estimation/<int:pk>/', EstimationCreateAPIView.as_view(), name='estimation-detail'),
-#     path('payment-tracking/', PaymentTrackingAPIView.as_view()),
-#     path('payment-tracking/<int:pk>/', PaymentTrackingAPIView.as_view()),
-
-#     path('payment-milestone/', ProjectPaymentMilestoneAPIView.as_view()),
-#     path('payment-milestone/<int:pk>/', ProjectPaymentMilestoneAPIView.as_view()),
-#     # path("projects/<int:project_id>/profit-loss-advanced/", ProfitLossAdvancedAPIView.as_view(), name="profit-loss-advanced"),
-#     path('project/<int:project_id>/estimation/', ProjectEstimationAPIView.as_view(), name='project-estimation'),
-#     path('project/<int:project_id>/payments/', ProjectPaymentTrackingAPIView.as_view(), name='project-payments'),
-#     path('project/<int:project_id>/estimation/payment/', ProjectEstimationPaymentAPIView.as_view(), name='project-financial-detail'),
- 
-
- 
-# ]
 
 
 from django.urls import path
@@ -33,12 +12,18 @@ from .views import (
 
 urlpatterns = [
     path("estimations/", EstimationCreateAPIView.as_view(), name="estimation-list"),
-    path("estimations/<int:pk>/", EstimationCreateAPIView.as_view(), name="estimation-detail"),
+    path('estimations/<int:pk>/', EstimationCreateAPIView.as_view(), name='estimation-update'),
+    path("projects/<int:project_id>/estimations/<int:estimation_id>/", EstimationCreateAPIView.as_view(), name="estimation-detail"),
     path('project/<int:pk>/estimation/', ProjectEstimationAPIView.as_view(), name='project-estimation'),
     path('project/<int:pk>/payments/', ProjectPaymentTrackingAPIView.as_view(), name='project-payments'),
     path('project/<int:pk>/estimation/payment/', ProjectEstimationPaymentAPIView.as_view(), name='project-financial-detail'),
 
     path("payments/", PaymentListCreateAPIView.as_view(), name="payments-list"),
+    # urls.py
+    # path('pay/<int:project_id>/payments/<int:payment_id>/', PaymentListCreateAPIView.as_view()),
+    # urls.py
+    path('projects/<int:project_id>/payments/<int:payment_id>/', PaymentListCreateAPIView.as_view()),
+
     path("payments/<int:pk>/", PaymentListCreateAPIView.as_view(), name="payments-detail"),
     path('projects/<int:pk>/add-hold/', AddHoldView.as_view(), name='add-hold'),
     path('holds/<int:hold_id>/release/', ReleaseHoldView.as_view(), name='release-hold'),
@@ -52,9 +37,6 @@ urlpatterns = [
     path("additional-requests/<int:req_id>/approve/", AdditionalRequestApproveAPIView.as_view(), name="additional-approve"),
     path("additional-requests/<int:req_id>/reject/", AdditionalRequestApproveAPIView.as_view(), name="additional-reject"),
 
-    # path("projects/<int:project_id>/change-requests/", ChangeRequestListView.as_view(), name="change-request-list"),
-    # path("change-requests/<int:cr_id>/approve/", ChangeRequestApproveView.as_view(), name="change-request-approve"),
-    # path("change-requests/<int:cr_id>/reject/", ChangeRequestRejectView.as_view(), name="change-request-reject"),
     path("projects/<int:pk>/change-requests/", ChangeRequestListView.as_view(), name="change-request-list"),
     # urls.py
     path("projects/<int:pk>/change-requests/create/",ChangeRequestCreateView.as_view(),name="change-request-create"),

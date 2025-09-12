@@ -13,18 +13,18 @@ from rest_framework.permissions import IsAuthenticated
 class CategoryView(APIView):
     permission_classes = [IsAuthenticated]  # Allow unrestricted access
     authentication_classes = [JWTAuthentication]  # Disable authentication for this view
-    def get(self, request, module_id=None):
-        if module_id:
+    def get(self, request, category_id=None):
+        if category_id:
             try:
-                module = Category.objects.get(module_id=module_id)
+                module = Category.objects.get(category_id=category_id)
                 serializer = ModuleSerializer(module)
-                return Response(serializer.data)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             except Category.DoesNotExist:
-                return Response({"error": "Module not found"}, status=404)
+                return Response({"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND)
         else:
             modules = Category.objects.all()
             serializer = ModuleSerializer(modules, many=True)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
     
     def post(self, request):
@@ -33,9 +33,9 @@ class CategoryView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    def put(self, request, module_id):
+    def put(self, request, category_id):
         try:
-            module = Category.objects.get(module_id=module_id)
+            module = Category.objects.get(category_id=category_id)
         except Category.DoesNotExist:
             return Response({"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -44,9 +44,9 @@ class CategoryView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    def delete(self, request, module_id):
+    def delete(self, request, category_id):
         try:
-            module = Category.objects.get(module_id=module_id)
+            module = Category.objects.get(category_id=category_id)
         except Category.DoesNotExist:
             return Response({"error": "Module not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -100,4 +100,32 @@ class MasterDataView(APIView):
 
         resource.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-        
+from login.serializers import UserSerializer
+class ModuleUsersView(APIView):
+    def get(self, request, category_id):
+        master_records = MasterData.objects.filter(category_id=category_id).select_related("name_of_resource")
+        users = [record.name_of_resource for record in master_records if record.name_of_resource]
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+from .serializers import ProfileSerializer
+class ProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes  = [JWTAuthentication]
+    # permission_classes = [AllowAny]
+
+    def get(self, request):
+        """Get logged-in user's profile"""
+        serializer = ProfileSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+class ResourceTypeAPIView(APIView):
+    def get(self, request):
+        values = [value for key, value in MasterData.RESOURCE_TYPE_CHOICES]
+        return Response(values)
+
+class WorkTypeAPIView(APIView):
+    def get(self, request):
+        values = [value for key, value in MasterData.WORK_TYPE_CHOICES]
+        return Response(values)

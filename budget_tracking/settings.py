@@ -27,7 +27,7 @@ SECRET_KEY=os.environ.get("SECRET_KEY","dev-secret")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 # SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret')
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+# DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ["tracking-be.onrender.com", "localhost", "127.0.0.1"]
 ALLOWED_HOSTS = ["*"]
@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'roles',
     'corsheaders',
     'bankdetails',
+    'task_creation',
 ]
 
 MIDDLEWARE = [
@@ -105,10 +106,20 @@ WSGI_APPLICATION = 'budget_tracking.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'merging_db',            # your database name
+        'USER': 'postgres',                     # your database user
+        'PASSWORD': 'Postgres@2025',     # user password
+        'HOST': 'localhost',             # or your server IP
+        'PORT': '5432',                  # default PostgreSQL port
     }
 }
 
@@ -184,8 +195,8 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = 'gedelasridevi02@gmail.com'
-EMAIL_HOST_PASSWORD = 'qqdg hviv kjpj xyhd'
+EMAIL_HOST_USER = 'teerdavenigedela@gmail.com'
+EMAIL_HOST_PASSWORD = 'vcig blpb lbdg sact'
 
 
 
