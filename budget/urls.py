@@ -28,7 +28,7 @@ from .views import (
     TransactionCreateAPIView, AdditionalRequestListCreateAPIView,
     AdditionalRequestApproveAPIView, NotificationListAPIView,
     RuleListCreateAPIView, EstimationCreateAPIView,AddHoldView, ReleaseHoldView,ProjectEstimationAPIView,ProjectPaymentTrackingAPIView,ProjectEstimationPaymentAPIView,ProfitLossAdvancedAPIView,
-    ChangeRequestListView, ChangeRequestApproveView, ChangeRequestRejectView,ChangeRequestCreateView
+    ChangeRequestListView, ChangeRequestApproveView, ChangeRequestRejectView,ChangeRequestCreateView,ProjectEstimationChangeAPIView,InvoiceGenerateAPIView
 )
 
 urlpatterns = [
@@ -37,7 +37,7 @@ urlpatterns = [
     path('project/<int:pk>/estimation/', ProjectEstimationAPIView.as_view(), name='project-estimation'),
     path('project/<int:pk>/payments/', ProjectPaymentTrackingAPIView.as_view(), name='project-payments'),
     path('project/<int:pk>/estimation/payment/', ProjectEstimationPaymentAPIView.as_view(), name='project-financial-detail'),
-
+    path("project/<int:pk>/estimation/change/", ProjectEstimationChangeAPIView.as_view(), name="project-estimation-change"),
     path("payments/", PaymentListCreateAPIView.as_view(), name="payments-list"),
     path("payments/<int:pk>/", PaymentListCreateAPIView.as_view(), name="payments-detail"),
     path('projects/<int:pk>/add-hold/', AddHoldView.as_view(), name='add-hold'),
@@ -65,6 +65,7 @@ urlpatterns = [
 
     # Reject a specific change request
     path("change-requests/<int:pk>/reject/", ChangeRequestRejectView.as_view(), name="change-request-reject"),
+     path("invoices/generate/<int:pk>/", InvoiceGenerateAPIView.as_view(), name="generate-invoice"),
 
 
     path("notifications/", NotificationListAPIView.as_view(), name="notifications"),

@@ -714,14 +714,11 @@ class BudgetMonitorService:
 
     @classmethod
     def _sum_estimations(cls, project):
-        """Total approved estimation (fallback to initial if appropriate)."""
-        estimations = ProjectEstimation.objects.filter(project=project)
+        """Sum approved estimations using total_amount."""
+        estimations = ProjectEstimation.objects.filter(project=project, is_approved=True)
         total = Decimal("0.00")
         for e in estimations:
-            if e.approved_amount is not None:
-                total += (e.approved_amount or Decimal("0.00"))
-            elif e.purchase_order_status in ("Received", "Pending"):
-                total += (e.initial_estimation_amount or Decimal("0.00"))
+            total += (e.total_amount or Decimal("0.00"))
         return total
 
     @classmethod
@@ -731,11 +728,12 @@ class BudgetMonitorService:
         Create CRs if needed and send notifications.
         Returns summary dict.
         """
+        # ✅ baseline estimation
         total_est_approved = cls._sum_estimations(project)
 
         payments_qs = ProjectPaymentTracking.objects.filter(project=project)
 
-        # ✅ Safe expression for budget
+        # ✅ Safe expression for available budget
         budget_expr = ExpressionWrapper(
             F("approved_budget") + F("additional_amount"),
             output_field=DecimalField(max_digits=15, decimal_places=2),
@@ -765,7 +763,7 @@ class BudgetMonitorService:
         total_penalty = aggs.get("total_penalty") or Decimal("0.00")
         total_available_budget = aggs.get("total_available_budget") or Decimal("0.00")
 
-        # ✅ Holds with correct Decimal typing
+        # ✅ Holds
         total_holds = payments_qs.aggregate(
             total=Coalesce(
                 Sum("holds__amount", output_field=DecimalField(max_digits=15, decimal_places=2)),
@@ -775,7 +773,7 @@ class BudgetMonitorService:
 
         total_actuals = (total_payout + total_retention + total_holds - total_penalty)
 
-        # baseline: prefer approved estimation, else available budget
+        # ✅ Baseline: prefer approved estimation, else fallback
         baseline = total_est_approved if total_est_approved > Decimal("0.00") else total_available_budget
 
         if baseline == Decimal("0.00"):
@@ -792,7 +790,7 @@ class BudgetMonitorService:
 
         AuditLog.record(project, None, "monitor.status", {"status": status, "ratio": str(usage_ratio)})
 
-        # Auto-create a CR when Over Budget and none pending
+        # ✅ Auto-create CR if Over Budget
         if status == "Over Budget":
             try:
                 suggested_amount = (total_actuals - baseline).quantize(Decimal("0.01"))
@@ -807,7 +805,6 @@ class BudgetMonitorService:
                             requested_amount=suggested_amount,
                             reason="Auto-suggested budget increase due to actuals exceeding estimation",
                             requested_by=None,
-                            correlation_id=f"auto-cr-{project.id}-{int(timezone.now().timestamp())}"
                         )
                         AuditLog.record(
                             project, None, "change_request.auto_created",
@@ -855,8 +852,6 @@ class BudgetMonitorService:
                 Notification.objects.create(user=user, project=project, title=title, body=body)
             except Exception as e:
                 AuditLog.record(project, None, "notify.error", {"error": str(e)})
-
-
 # def validate_payment_against_policy(project, payment_amount: Decimal, user=None):
 #     """
 #     Enforce BudgetPolicy when a new payment (or a budget add) is requested.

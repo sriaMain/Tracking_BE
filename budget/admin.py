@@ -1,10 +1,10 @@
 from django.contrib import admin
 from .models import (
-  ProjectPaymentTracking, ProjectPaymentMilestone, PaymentTransaction,
+  ProjectPaymentTracking, ProjectPaymentMilestone, PaymentTransaction,ProjectEstimation,
     AdditionalBudgetRequest, AuditLog, Notification, Rule, PaymentHistory
 )
 
-
+admin.site.register(ProjectEstimation)
 admin.site.register(ProjectPaymentTracking)
 admin.site.register(ProjectPaymentMilestone)
 admin.site.register(PaymentTransaction)

@@ -1,60 +1,313 @@
 from rest_framework import serializers
 from .models import ProjectEstimation, ProjectPaymentTracking, ProjectPaymentMilestone, ChangeRequest
 from project_creation.models import Project, Client
-from .models import ProjectPaymentTracking, ProjectPaymentMilestone, PaymentTransaction,AdditionalBudgetRequest, Notification, Rule, PaymentHistory, AuditLog,Hold,BudgetPolicy
+from .models import (ProjectPaymentTracking, ProjectPaymentMilestone, PaymentTransaction,
+                     AdditionalBudgetRequest, Notification, Rule, PaymentHistory, AuditLog,Hold,BudgetPolicy,Invoice)
 from roles.models import UserRole
 from django.db.models import Sum
 from decimal import Decimal
 from django.utils import timezone
+# class EstimationSerializer(serializers.ModelSerializer):
+#     project_name = serializers.SerializerMethodField()
+#     estimation_provider_name = serializers.SerializerMethodField()
+#     estimation_review_name = serializers.SerializerMethodField()
+#     estimation_review_by_client_name = serializers.SerializerMethodField()
+#     created_by = serializers.SerializerMethodField()
+#     modified_by = serializers.SerializerMethodField()
+#     class Meta:
+#         model = ProjectEstimation
+#         fields = (
+#             'id',
+#             'project', 'project_name',
+#             'estimation_provider', 'estimation_provider_name',
+#             'estimation_review', 'estimation_review_name',
+#             'estimation_review_by_client', 'estimation_review_by_client_name',
+#             'created_at', 'modified_at',
+#             'estimation_date',
+#             'initial_estimation_amount',
+#             'approved_amount',
+#             'is_approved',
+#             'purchase_order_status',
+#             'created_by', 'modified_by',
+#         )
+#         read_only_fields = ('created_at', 'modified_at')
+
+#     def get_project_name(self, obj):
+#         return getattr(obj.project, "project_code", None)
+
+#     def get_estimation_provider_name(self, obj):
+#         try:
+#             return obj.estimation_provider.user.username
+#         except AttributeError:
+#             return None
+
+#     def get_estimation_review_name(self, obj):
+#         try:
+#             return obj.estimation_review.user.username
+#         except AttributeError:
+#             return None
+
+#     def get_estimation_review_by_client_name(self, obj):
+#         return getattr(obj.estimation_review_by_client, "client_name", None)
+
+#     def get_created_by(self, obj):
+#         return getattr(obj.created_by, "username", None)
+
+#     def get_modified_by(self, obj):
+#         return getattr(obj.modified_by, "username", None)
+# class EstimationSerializer(serializers.ModelSerializer):
+#     project_name = serializers.SerializerMethodField()
+#     estimation_provider_name = serializers.SerializerMethodField()
+#     estimation_review_name = serializers.SerializerMethodField()
+#     estimation_review_by_client_name = serializers.SerializerMethodField()
+
+#     created_by = serializers.SerializerMethodField()
+#     modified_by = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = ProjectEstimation
+#         fields = (
+#             "id",
+#             "project", "project_name",
+#             "estimation_provider", "estimation_provider_name",
+#             "estimation_review", "estimation_review_name",
+#             "estimation_review_by_client", "estimation_review_by_client_name",
+#             "created_at", "modified_at",
+#             "estimation_date", "initial_estimation_amount",
+#             "approved_amount", "is_approved",
+#             "purchase_order_status",
+#             "created_by", "modified_by",
+#             "version"
+#         )
+#         read_only_fields = ("created_at", "modified_at")
+
+#     def get_project_name(self, obj):
+#         return getattr(obj.project, "project_name", None)
+
+#     def get_estimation_provider_name(self, obj):
+#         return getattr(obj.estimation_provider.user, "username", None) if obj.estimation_provider else None
+
+#     def get_estimation_review_name(self, obj):
+#         return getattr(obj.estimation_review.user, "username", None) if obj.estimation_review else None
+
+#     def get_estimation_review_by_client_name(self, obj):
+#         return getattr(obj.estimation_review_by_client, "client_name", None) if obj.estimation_review_by_client else None
+
+#     def get_created_by(self, obj):
+#         return getattr(obj.created_by, "username", None)
+
+#     def get_modified_by(self, obj):
+#         return getattr(obj.modified_by, "username", None)
+
+
+# class EstimationSerializer(serializers.ModelSerializer):
+#     project_name = serializers.SerializerMethodField()
+#     estimation_provider_name = serializers.SerializerMethodField()
+#     estimation_review_name = serializers.SerializerMethodField()
+#     estimation_review_by_client_name = serializers.SerializerMethodField()
+#     created_by_name = serializers.SerializerMethodField()
+#     modified_by_name = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = ProjectEstimation
+#         fields = (
+#             "id", "project", "project_name",
+#             "estimation_provider", "estimation_provider_name",
+#             "estimation_review", "estimation_review_name",
+#             "estimation_review_by_client", "estimation_review_by_client_name",
+#             "created_at", "modified_at", "estimation_date",
+#             "initial_amount", "additional_amount",
+#             "total_amount", "pending_amount",  # 👈 always recalculated
+#             "is_approved", "purchase_order_status",
+#             "created_by", "created_by_name",
+#             "modified_by", "modified_by_name",
+#             "version",
+#         )
+#         read_only_fields = ("pending_amount", "total_amount")
+
+#     def get_project_name(self, obj):
+#         return getattr(obj.project, "project_name", None)
+
+#     def get_estimation_provider_name(self, obj):
+#         return getattr(obj.estimation_provider.user, "username", None) if obj.estimation_provider else None
+
+#     def get_estimation_review_name(self, obj):
+#         return getattr(obj.estimation_review.user, "username", None) if obj.estimation_review else None
+
+#     def get_estimation_review_by_client_name(self, obj):
+#         return getattr(obj.estimation_review_by_client, "client_name", None) if obj.estimation_review_by_client else None
+
+#     def get_created_by_name(self, obj):
+#         return getattr(obj.created_by, "username", None)
+
+#     def get_modified_by_name(self, obj):
+#         return getattr(obj.modified_by, "username", None)
+
 class EstimationSerializer(serializers.ModelSerializer):
+    # Related field names
     project_name = serializers.SerializerMethodField()
     estimation_provider_name = serializers.SerializerMethodField()
     estimation_review_name = serializers.SerializerMethodField()
     estimation_review_by_client_name = serializers.SerializerMethodField()
-    created_by = serializers.SerializerMethodField()
-    modified_by = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
+    modified_by_name = serializers.SerializerMethodField()
+
+    # Consistency and summary fields
+    is_data_consistent = serializers.SerializerMethodField()
+    payment_summary = serializers.SerializerMethodField()
+    consistency_issues = serializers.SerializerMethodField()
+
     class Meta:
         model = ProjectEstimation
         fields = (
-            'id',
-            'project', 'project_name',
-            'estimation_provider', 'estimation_provider_name',
-            'estimation_review', 'estimation_review_name',
-            'estimation_review_by_client', 'estimation_review_by_client_name',
-            'created_at', 'modified_at',
-            'estimation_date',
-            'initial_estimation_amount',
-            'approved_amount',
-            'is_approved',
-            'purchase_order_status',
-            'created_by', 'modified_by',
-        )
-        read_only_fields = ('created_at', 'modified_at')
+            # Basic fields
+            "id", "project", "project_name",
+            "estimation_provider", "estimation_provider_name",
+            "estimation_review", "estimation_review_name",
+            "estimation_review_by_client", "estimation_review_by_client_name",
 
+            # Dates and version
+            "created_at", "modified_at", "estimation_date", "version",
+
+            # Financial fields
+            "initial_amount", "additional_amount",
+            "total_amount", "pending_amount", "received_amount",
+
+            # Status fields
+            "is_approved", "purchase_order_status",
+
+            # Audit fields
+            "created_by", "created_by_name",
+            "modified_by", "modified_by_name",
+
+            # Validation fields
+            "is_data_consistent", "payment_summary", "consistency_issues",
+        )
+        read_only_fields = (
+            "id", "pending_amount", "total_amount",  
+            "is_data_consistent", "payment_summary", "consistency_issues",
+            "created_at", "modified_at", "created_by_name", "modified_by_name",
+            "project_name", "estimation_provider_name",
+            "estimation_review_name", "estimation_review_by_client_name",
+        )
+
+    # ====== Related Names ======
     def get_project_name(self, obj):
-        return getattr(obj.project, "project_code", None)
+        return getattr(obj.project, "project_name", None)
 
     def get_estimation_provider_name(self, obj):
-        try:
-            return obj.estimation_provider.user.username
-        except AttributeError:
-            return None
+        return getattr(obj.estimation_provider.user, "username", None) if obj.estimation_provider else None
 
     def get_estimation_review_name(self, obj):
-        try:
-            return obj.estimation_review.user.username
-        except AttributeError:
-            return None
+        return getattr(obj.estimation_review.user, "username", None) if obj.estimation_review else None
 
     def get_estimation_review_by_client_name(self, obj):
-        return getattr(obj.estimation_review_by_client, "client_name", None)
+        return getattr(obj.estimation_review_by_client, "client_name", None) if obj.estimation_review_by_client else None
 
-    def get_created_by(self, obj):
+    def get_created_by_name(self, obj):
         return getattr(obj.created_by, "username", None)
 
-    def get_modified_by(self, obj):
+    def get_modified_by_name(self, obj):
         return getattr(obj.modified_by, "username", None)
 
+    # ====== Consistency & Payment ======
+    def get_is_data_consistent(self, obj):
+        validation = obj.status_with_validation
+        return validation.get('is_consistent')
+
+    def get_consistency_issues(self, obj):
+        validation = obj.status_with_validation
+        return validation.get('issues')
+
+    def get_payment_summary(self, obj):
+        return obj.payment_summary
+
+    # ====== Validation ======
+    def validate(self, data):
+        """Custom validation for create/update"""
+        received_amount = data.get('received_amount', getattr(self.instance, "received_amount", 0))
+        initial_amount = data.get('initial_amount', getattr(self.instance, "initial_amount", 0))
+        additional_amount = data.get('additional_amount', getattr(self.instance, "additional_amount", 0))
+        total_amount = initial_amount + additional_amount
+
+        if received_amount > total_amount:
+            raise serializers.ValidationError("Received amount cannot exceed total amount")
+
+        if self.instance:  # Update case
+            current_status = self.instance.purchase_order_status
+            new_status = data.get('purchase_order_status', current_status)
+            if current_status == ProjectEstimation.STATUS_RECEIVED and new_status != ProjectEstimation.STATUS_RECEIVED:
+                raise serializers.ValidationError("Cannot change status from 'Received'")
+
+        return data
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+
+        # Run consistency fix on creation too
+        if instance.purchase_order_status == ProjectEstimation.STATUS_RECEIVED:
+            instance.received_amount = instance.total_amount
+            instance.pending_amount = Decimal("0.00")
+            instance.save()
+
+        return instance
+
+    def update(self, instance, validated_data):
+        # If client sets status to "Received", enforce amounts
+        if validated_data.get("purchase_order_status") == ProjectEstimation.STATUS_RECEIVED:
+            instance.received_amount = instance.total_amount
+            instance.pending_amount = Decimal("0.00")
+            validated_data["received_amount"] = instance.total_amount
+            validated_data["pending_amount"] = Decimal("0.00")
+
+        if 'purchase_order_status' in validated_data:
+            instance._explicit_status = True
+
+        instance = super().update(instance, validated_data)
+
+        # Ensure save() recalculation runs
+        instance.save()
+        return instance
+
+
+
+
+
+
+# -----------------------------
+# Change Request Serializer
+# -----------------------------
+class ChangeRequestSerializer(serializers.ModelSerializer):
+    project_name = serializers.SerializerMethodField()
+    requested_by_name = serializers.SerializerMethodField()
+    reviewed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChangeRequest
+        fields = (
+            "id",
+            "project",
+            "project_name",
+            "requested_amount",
+            "reason",
+            "status",
+            "requested_by",
+            "requested_by_name",
+            "reviewed_by",
+            "reviewed_by_name",
+            "reviewed_at",
+            "created_at",
+            "modified_at",
+        )
+        read_only_fields = ("status", "reviewed_by", "reviewed_at", "created_at", "modified_at")
+
+    def get_project_name(self, obj):
+        return getattr(obj.project, "project_name", None)
+
+    def get_requested_by_name(self, obj):
+        return getattr(obj.requested_by, "username", None) if obj.requested_by else None
+
+    def get_reviewed_by_name(self, obj):
+        return getattr(obj.reviewed_by, "username", None) if obj.reviewed_by else None
 
 class ProjectPaymentMilestoneSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField()
@@ -378,11 +631,11 @@ class AdditionalBudgetRequestSerializer(serializers.ModelSerializer):
 #             "modified_at",
 #         ]
 
-class ChangeRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ChangeRequest
-        fields = "__all__"
-        read_only_fields = ("status", "reviewed_by", "reviewed_at", "created_at", "modified_at")
+# class ChangeRequestSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ChangeRequest
+#         fields = "__all__"
+#         read_only_fields = ("status", "reviewed_by", "reviewed_at", "created_at", "modified_at")
 
 
 
@@ -412,3 +665,27 @@ class AuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditLog
         fields = "__all__"
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    project_name = serializers.CharField(source="project.project_name", read_only=True)
+    client_name = serializers.CharField(source="project.client.name", read_only=True)
+    estimation_summary = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Invoice
+        fields = [
+            "id", "invoice_number", "invoice_date", "due_date",
+            "amount", "status", "notes", "pdf_file",
+            "project", "project_name", "client_name", "estimation", "estimation_summary",
+            "created_at", "modified_at"
+        ]
+        read_only_fields = ["invoice_number", "pdf_file", "status"]
+
+    def get_estimation_summary(self, obj):
+        return {
+            "total_amount": obj.estimation.total_amount,
+            "received_amount": obj.estimation.received_amount,
+            "pending_amount": obj.estimation.pending_amount,
+            "payment_summary": obj.estimation.payment_summary
+        }
