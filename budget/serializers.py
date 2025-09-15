@@ -7,144 +7,11 @@ from roles.models import UserRole
 from django.db.models import Sum
 from decimal import Decimal
 from django.utils import timezone
-# class EstimationSerializer(serializers.ModelSerializer):
-#     project_name = serializers.SerializerMethodField()
-#     estimation_provider_name = serializers.SerializerMethodField()
-#     estimation_review_name = serializers.SerializerMethodField()
-#     estimation_review_by_client_name = serializers.SerializerMethodField()
-#     created_by = serializers.SerializerMethodField()
-#     modified_by = serializers.SerializerMethodField()
-#     class Meta:
-#         model = ProjectEstimation
-#         fields = (
-#             'id',
-#             'project', 'project_name',
-#             'estimation_provider', 'estimation_provider_name',
-#             'estimation_review', 'estimation_review_name',
-#             'estimation_review_by_client', 'estimation_review_by_client_name',
-#             'created_at', 'modified_at',
-#             'estimation_date',
-#             'initial_estimation_amount',
-#             'approved_amount',
-#             'is_approved',
-#             'purchase_order_status',
-#             'created_by', 'modified_by',
-#         )
-#         read_only_fields = ('created_at', 'modified_at')
-
-#     def get_project_name(self, obj):
-#         return getattr(obj.project, "project_code", None)
-
-#     def get_estimation_provider_name(self, obj):
-#         try:
-#             return obj.estimation_provider.user.username
-#         except AttributeError:
-#             return None
-
-#     def get_estimation_review_name(self, obj):
-#         try:
-#             return obj.estimation_review.user.username
-#         except AttributeError:
-#             return None
-
-#     def get_estimation_review_by_client_name(self, obj):
-#         return getattr(obj.estimation_review_by_client, "client_name", None)
-
-#     def get_created_by(self, obj):
-#         return getattr(obj.created_by, "username", None)
-
-#     def get_modified_by(self, obj):
-#         return getattr(obj.modified_by, "username", None)
-# class EstimationSerializer(serializers.ModelSerializer):
-#     project_name = serializers.SerializerMethodField()
-#     estimation_provider_name = serializers.SerializerMethodField()
-#     estimation_review_name = serializers.SerializerMethodField()
-#     estimation_review_by_client_name = serializers.SerializerMethodField()
-
-#     created_by = serializers.SerializerMethodField()
-#     modified_by = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = ProjectEstimation
-#         fields = (
-#             "id",
-#             "project", "project_name",
-#             "estimation_provider", "estimation_provider_name",
-#             "estimation_review", "estimation_review_name",
-#             "estimation_review_by_client", "estimation_review_by_client_name",
-#             "created_at", "modified_at",
-#             "estimation_date", "initial_estimation_amount",
-#             "approved_amount", "is_approved",
-#             "purchase_order_status",
-#             "created_by", "modified_by",
-#             "version"
-#         )
-#         read_only_fields = ("created_at", "modified_at")
-
-#     def get_project_name(self, obj):
-#         return getattr(obj.project, "project_name", None)
-
-#     def get_estimation_provider_name(self, obj):
-#         return getattr(obj.estimation_provider.user, "username", None) if obj.estimation_provider else None
-
-#     def get_estimation_review_name(self, obj):
-#         return getattr(obj.estimation_review.user, "username", None) if obj.estimation_review else None
-
-#     def get_estimation_review_by_client_name(self, obj):
-#         return getattr(obj.estimation_review_by_client, "client_name", None) if obj.estimation_review_by_client else None
-
-#     def get_created_by(self, obj):
-#         return getattr(obj.created_by, "username", None)
-
-#     def get_modified_by(self, obj):
-#         return getattr(obj.modified_by, "username", None)
 
 
-# class EstimationSerializer(serializers.ModelSerializer):
-#     project_name = serializers.SerializerMethodField()
-#     estimation_provider_name = serializers.SerializerMethodField()
-#     estimation_review_name = serializers.SerializerMethodField()
-#     estimation_review_by_client_name = serializers.SerializerMethodField()
-#     created_by_name = serializers.SerializerMethodField()
-#     modified_by_name = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = ProjectEstimation
-#         fields = (
-#             "id", "project", "project_name",
-#             "estimation_provider", "estimation_provider_name",
-#             "estimation_review", "estimation_review_name",
-#             "estimation_review_by_client", "estimation_review_by_client_name",
-#             "created_at", "modified_at", "estimation_date",
-#             "initial_amount", "additional_amount",
-#             "total_amount", "pending_amount",  # 👈 always recalculated
-#             "is_approved", "purchase_order_status",
-#             "created_by", "created_by_name",
-#             "modified_by", "modified_by_name",
-#             "version",
-#         )
-#         read_only_fields = ("pending_amount", "total_amount")
-
-#     def get_project_name(self, obj):
-#         return getattr(obj.project, "project_name", None)
-
-#     def get_estimation_provider_name(self, obj):
-#         return getattr(obj.estimation_provider.user, "username", None) if obj.estimation_provider else None
-
-#     def get_estimation_review_name(self, obj):
-#         return getattr(obj.estimation_review.user, "username", None) if obj.estimation_review else None
-
-#     def get_estimation_review_by_client_name(self, obj):
-#         return getattr(obj.estimation_review_by_client, "client_name", None) if obj.estimation_review_by_client else None
-
-#     def get_created_by_name(self, obj):
-#         return getattr(obj.created_by, "username", None)
-
-#     def get_modified_by_name(self, obj):
-#         return getattr(obj.modified_by, "username", None)
 
 class EstimationSerializer(serializers.ModelSerializer):
-    # Related field names
+
     project_name = serializers.SerializerMethodField()
     estimation_provider_name = serializers.SerializerMethodField()
     estimation_review_name = serializers.SerializerMethodField()
@@ -160,31 +27,20 @@ class EstimationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectEstimation
         fields = (
-            # Basic fields
             "id", "project", "project_name",
             "estimation_provider", "estimation_provider_name",
             "estimation_review", "estimation_review_name",
             "estimation_review_by_client", "estimation_review_by_client_name",
-
-            # Dates and version
             "created_at", "modified_at", "estimation_date", "version",
-
-            # Financial fields
             "initial_amount", "additional_amount",
             "total_amount", "pending_amount", "received_amount",
-
-            # Status fields
             "is_approved", "purchase_order_status",
-
-            # Audit fields
             "created_by", "created_by_name",
             "modified_by", "modified_by_name",
-
-            # Validation fields
             "is_data_consistent", "payment_summary", "consistency_issues",
         )
         read_only_fields = (
-            "id", "pending_amount", "total_amount",  
+            "id", "pending_amount", "total_amount",
             "is_data_consistent", "payment_summary", "consistency_issues",
             "created_at", "modified_at", "created_by_name", "modified_by_name",
             "project_name", "estimation_provider_name",
@@ -212,70 +68,108 @@ class EstimationSerializer(serializers.ModelSerializer):
 
     # ====== Consistency & Payment ======
     def get_is_data_consistent(self, obj):
-        validation = obj.status_with_validation
-        return validation.get('is_consistent')
+        return getattr(obj, "status_with_validation", {}).get('is_consistent', True)
 
     def get_consistency_issues(self, obj):
-        validation = obj.status_with_validation
-        return validation.get('issues')
+        return getattr(obj, "status_with_validation", {}).get('issues', [])
 
     def get_payment_summary(self, obj):
-        return obj.payment_summary
+        return getattr(obj, "payment_summary", {})
 
-    # ====== Validation ======
-    def validate(self, data):
-        """Custom validation for create/update"""
-        received_amount = data.get('received_amount', getattr(self.instance, "received_amount", 0))
-        initial_amount = data.get('initial_amount', getattr(self.instance, "initial_amount", 0))
-        additional_amount = data.get('additional_amount', getattr(self.instance, "additional_amount", 0))
+   
+    def validate(self, attrs):
+        project = attrs.get('project') or getattr(self.instance, 'project', None)
+        if not project:
+            raise serializers.ValidationError("Project is required.")
+        if not Project.objects.filter(id=project.id, is_active=True).exists():
+            raise serializers.ValidationError("Active project not found.")
+
+        # --- UserRole & Client validation ---
+        for field, model, name in [
+            ('estimation_provider', UserRole, 'Estimation provider'),
+            ('estimation_review', UserRole, 'Estimation reviewer'),
+            ('estimation_review_by_client', Client, 'Client reviewer'),
+        ]:
+            obj = attrs.get(field) or getattr(self.instance, field, None)
+            if obj and not model.objects.filter(pk=obj.pk).exists():
+                raise serializers.ValidationError(f"{name} is invalid.")
+
+        # --- Status validation ---
+        purchase_order_status = attrs.get(
+            'purchase_order_status',
+            getattr(self.instance, 'purchase_order_status', ProjectEstimation.STATUS_PENDING)
+        )
+        is_approved = attrs.get('is_approved', getattr(self.instance, 'is_approved', False))
+
+        allowed_statuses = [choice[0] for choice in ProjectEstimation.STATUS_CHOICES]
+        if purchase_order_status not in allowed_statuses:
+            raise serializers.ValidationError("Invalid purchase order status.")
+        if is_approved and purchase_order_status != ProjectEstimation.STATUS_APPROVED:
+            raise serializers.ValidationError("Estimation cannot be approved unless status is 'Approved'.")
+
+        # --- Amount validation ---
+        initial_amount = attrs.get('initial_amount', getattr(self.instance, 'initial_amount', Decimal('0.00')))
+        additional_amount = attrs.get('additional_amount', getattr(self.instance, 'additional_amount', Decimal('0.00')))
+        received_amount = attrs.get('received_amount', getattr(self.instance, 'received_amount', Decimal('0.00')))
+        if any(a < 0 for a in [initial_amount, additional_amount, received_amount]):
+            raise serializers.ValidationError("Amounts cannot be negative.")
+
         total_amount = initial_amount + additional_amount
-
         if received_amount > total_amount:
-            raise serializers.ValidationError("Received amount cannot exceed total amount")
+            raise serializers.ValidationError("Received amount cannot exceed total amount.")
 
-        if self.instance:  # Update case
+        # --- Versioning & Creation Rules ---
+        if not getattr(self.instance, 'id', None):  # Only on create
+            # Block if any estimation is Approved or Received
+            if ProjectEstimation.objects.filter(
+                project=project,
+                purchase_order_status__in=[ProjectEstimation.STATUS_APPROVED, ProjectEstimation.STATUS_RECEIVED]
+            ).exists():
+                raise serializers.ValidationError(
+                    "A project already has an Approved/Received estimation. New estimation cannot be created."
+                )
+
+            # Otherwise, increment version based on last estimation
+            last_estimation = ProjectEstimation.objects.filter(project=project).order_by('-version').first()
+            attrs['version'] = (last_estimation.version + 1) if last_estimation else 1
+        else:
+            # On update, keep version as is
+            attrs['version'] = getattr(self.instance, 'version', 1)
+
+        # --- Date validation ---
+        estimation_date = attrs.get('estimation_date', getattr(self.instance, 'estimation_date', timezone.now().date()))
+        if estimation_date > timezone.now().date():
+            raise serializers.ValidationError("Estimation date cannot be in the future.")
+
+        # --- Auto-calc amounts ---
+        attrs['total_amount'] = total_amount
+        attrs['pending_amount'] = total_amount - received_amount
+
+        # --- Status change check ---
+        if self.instance:
             current_status = self.instance.purchase_order_status
-            new_status = data.get('purchase_order_status', current_status)
+            new_status = attrs.get('purchase_order_status', current_status)
             if current_status == ProjectEstimation.STATUS_RECEIVED and new_status != ProjectEstimation.STATUS_RECEIVED:
                 raise serializers.ValidationError("Cannot change status from 'Received'")
 
-        return data
+        return attrs
+
     def create(self, validated_data):
         instance = super().create(validated_data)
-
-        # Run consistency fix on creation too
         if instance.purchase_order_status == ProjectEstimation.STATUS_RECEIVED:
             instance.received_amount = instance.total_amount
             instance.pending_amount = Decimal("0.00")
             instance.save()
-
         return instance
 
     def update(self, instance, validated_data):
-        # If client sets status to "Received", enforce amounts
         if validated_data.get("purchase_order_status") == ProjectEstimation.STATUS_RECEIVED:
-            instance.received_amount = instance.total_amount
-            instance.pending_amount = Decimal("0.00")
             validated_data["received_amount"] = instance.total_amount
             validated_data["pending_amount"] = Decimal("0.00")
-
-        if 'purchase_order_status' in validated_data:
-            instance._explicit_status = True
-
         instance = super().update(instance, validated_data)
-
-        # Ensure save() recalculation runs
         instance.save()
         return instance
 
-
-
-
-
-
-# -----------------------------
-# Change Request Serializer
-# -----------------------------
 class ChangeRequestSerializer(serializers.ModelSerializer):
     project_name = serializers.SerializerMethodField()
     requested_by_name = serializers.SerializerMethodField()
@@ -340,113 +234,7 @@ class HoldSerializer(serializers.ModelSerializer):
         fields = ['id', 'amount', 'is_active', 'created_at', 'released_at']
 
 
-# class ProjectPaymentTrackingSerializer(serializers.ModelSerializer):
-#     milestones = ProjectPaymentMilestoneSerializer(many=True, read_only=True)
-#     total_available_budget = serializers.SerializerMethodField()
-#     total_milestones_amount = serializers.SerializerMethodField()
-#     completed_milestones_amount = serializers.SerializerMethodField()
-#     total_hold_amount = serializers.SerializerMethodField()
-#     pending = serializers.SerializerMethodField()
-#     budget_utilization_percentage = serializers.SerializerMethodField()
-#     holds = HoldSerializer(many=True, read_only=True)
-#     created_by = serializers.SerializerMethodField()
-#     modified_by = serializers.SerializerMethodField()
 
-#     class Meta:
-#         model = ProjectPaymentTracking
-#         fields = [
-#             "id", "project", "payment_type", "resource", "currency",
-#             "approved_budget", "additional_amount",
-#             "payout", "retention_amount", "penalty_amount",
-#             "total_available_budget", "total_milestones_amount", "completed_milestones_amount",
-#             "total_hold_amount", "pending", "budget_utilization_percentage",
-#             "is_budget_locked", "budget_exceeded_approved",
-#             "created_by", "modified_by", "created_at", "modified_at",
-#             "milestones","holds",
-#         ]
-#         read_only_fields = [
-#             "created_at", "modified_at", "total_available_budget", "total_milestones_amount",
-#             "completed_milestones_amount", "total_hold_amount", "pending", "budget_utilization_percentage",
-#             "milestones","holds",
-#         ]
-
-#     def get_total_available_budget(self, obj):
-#         return obj.total_available_budget
-
-#     def get_total_milestones_amount(self, obj):
-#         return obj.total_milestones_amount
-
-#     def get_completed_milestones_amount(self, obj):
-#         return obj.completed_milestones_amount
-
-#     def get_total_hold_amount(self, obj):
-#         return obj.total_holds_amount
-
-#     def get_pending(self, obj):
-#         return obj.pending
-
-#     def get_budget_utilization_percentage(self, obj):
-#         return obj.budget_utilization_percentage
-
-#     def get_created_by(self, obj):
-#         return getattr(obj.created_by, "username", None)
-
-#     def get_modified_by(self, obj):
-#         return getattr(obj.modified_by, "username", None)
-
-# class ProjectPaymentTrackingSerializer(serializers.ModelSerializer):
-#     milestones = ProjectPaymentMilestoneSerializer(many=True, read_only=True)
-#     total_available_budget = serializers.SerializerMethodField()
-#     total_milestones_amount = serializers.SerializerMethodField()
-#     completed_milestones_amount = serializers.SerializerMethodField()
-#     total_holds_amount = serializers.SerializerMethodField()  # ✅ fixed naming
-#     pending = serializers.SerializerMethodField()
-#     budget_utilization_percentage = serializers.SerializerMethodField()
-#     holds = HoldSerializer(many=True, read_only=True)
-#     created_by = serializers.SerializerMethodField()
-#     modified_by = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = ProjectPaymentTracking
-#         fields = [
-#             "id", "project", "payment_type", "resource", "currency",
-#             "approved_budget", "additional_amount",
-#             "payout", "retention_amount", "penalty_amount",
-#             "total_available_budget", "total_milestones_amount", "completed_milestones_amount",
-#             "total_holds_amount", "pending", "budget_utilization_percentage",  # ✅ fixed
-#             "is_budget_locked", "budget_exceeded_approved",
-#             "created_by", "modified_by", "created_at", "modified_at",
-#             "milestones", "holds",
-#         ]
-#         read_only_fields = [
-#             "created_at", "modified_at", "total_available_budget", "total_milestones_amount",
-#             "completed_milestones_amount", "total_holds_amount", "pending", "budget_utilization_percentage",
-#             "milestones", "holds",
-#         ]
-
-#     def get_total_available_budget(self, obj):
-#         return obj.total_available_budget
-
-#     def get_total_milestones_amount(self, obj):
-#         return obj.total_milestones_amount
-
-#     def get_completed_milestones_amount(self, obj):
-#         return obj.completed_milestones_amount
-
-#     def get_total_holds_amount(self, obj):  # ✅ fixed
-#         return obj.total_holds_amount
-
-#     def get_pending(self, obj):
-#         return obj.pending
-
-#     def get_budget_utilization_percentage(self, obj):
-#         return obj.budget_utilization_percentage
-
-#     def get_created_by(self, obj):
-#         return getattr(obj.created_by, "username", None)
-
-#     def get_modified_by(self, obj):
-#         return getattr(obj.modified_by, "username", None)   1111111
 
 from decimal import Decimal
 from rest_framework import serializers
@@ -482,39 +270,7 @@ class ProjectPaymentTrackingSerializer(serializers.ModelSerializer):
             "milestones", "holds",
         ]
 
-    # --- Computed fields ---
-    # def get_total_available_budget(self, obj):
-    #     return Decimal(obj.approved_budget or 0) - Decimal(obj.payout or 0)
-
-    # def get_total_milestones_amount(self, obj):
-    #     total = sum([Decimal(m.amount or 0) for m in getattr(obj, 'milestones', [])])
-    #     return total
-
-    # def get_completed_milestones_amount(self, obj):
-    #     total = sum([Decimal(m.amount or 0) for m in getattr(obj, 'milestones', []) if m.is_completed])
-    #     return total
-
-    # def get_total_holds_amount(self, obj):
-    #     total = sum([Decimal(h.amount or 0) for h in getattr(obj, 'holds', [])])
-    #     return total
-
-    # def get_pending(self, obj):
-    #     pending = (Decimal(obj.approved_budget or 0) + Decimal(obj.additional_amount or 0)) \
-    #               - Decimal(obj.payout or 0) - Decimal(obj.retention_amount or 0) - Decimal(obj.penalty_amount or 0)
-    #     return pending
-
-    # def get_budget_utilization_percentage(self, obj):
-    #     approved = Decimal(obj.approved_budget or 0)
-    #     payout = Decimal(obj.payout or 0)
-    #     if approved == 0:
-    #         return Decimal("0.00")
-    #     return (payout / approved * 100).quantize(Decimal("0.01"))
-
-    # def get_created_by(self, obj):
-    #     return getattr(obj.created_by, "username", None)
-
-    # def get_modified_by(self, obj):
-    #     return getattr(obj.modified_by, "username", None)
+  
     def get_total_available_budget(self, obj):
         return obj.total_available_budget
 
@@ -610,33 +366,6 @@ class AdditionalBudgetRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Requested amount must be positive.")
         return value
     
-
-# class ChangeRequestSerializer(serializers.ModelSerializer):
-#     project_name = serializers.CharField(source="project.project_name", read_only=True)
-#     requested_by_name = serializers.CharField(source="requested_by.username", read_only=True)
-#     reviewed_by_name = serializers.CharField(source="reviewed_by.username", read_only=True)
-
-#     class Meta:
-#         model = ChangeRequest
-#         fields = [
-#             "id",
-#             "project_name",
-#             "requested_amount",
-#             "reason",
-#             "status",
-#             "requested_by_name",
-#             "reviewed_by_name",
-#             "reviewed_at",
-#             "created_at",
-#             "modified_at",
-#         ]
-
-# class ChangeRequestSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ChangeRequest
-#         fields = "__all__"
-#         read_only_fields = ("status", "reviewed_by", "reviewed_at", "created_at", "modified_at")
-
 
 
 class BudgetPolicySerializer(serializers.ModelSerializer):

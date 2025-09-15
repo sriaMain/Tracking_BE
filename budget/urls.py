@@ -28,7 +28,7 @@ from .views import (
     TransactionCreateAPIView, AdditionalRequestListCreateAPIView,
     AdditionalRequestApproveAPIView, NotificationListAPIView,
     RuleListCreateAPIView, EstimationCreateAPIView,AddHoldView, ReleaseHoldView,ProjectEstimationAPIView,ProjectPaymentTrackingAPIView,ProjectEstimationPaymentAPIView,ProfitLossAdvancedAPIView,
-    ChangeRequestListView, ChangeRequestApproveView, ChangeRequestRejectView,ChangeRequestCreateView,ProjectEstimationChangeAPIView,InvoiceGenerateAPIView
+    ChangeRequestListView, ChangeRequestApproveView, ChangeRequestRejectView,ChangeRequestCreateView,ProjectEstimationChangeAPIView,InvoiceGenerateAPIView,download_invoice
 )
 
 urlpatterns = [
@@ -40,11 +40,13 @@ urlpatterns = [
     path("project/<int:pk>/estimation/change/", ProjectEstimationChangeAPIView.as_view(), name="project-estimation-change"),
     path("payments/", PaymentListCreateAPIView.as_view(), name="payments-list"),
     path("payments/<int:pk>/", PaymentListCreateAPIView.as_view(), name="payments-detail"),
+
     path('projects/<int:pk>/add-hold/', AddHoldView.as_view(), name='add-hold'),
     path('holds/<int:hold_id>/release/', ReleaseHoldView.as_view(), name='release-hold'),
 
     path("milestones/", MilestoneListCreateAPIView.as_view(), name="milestones-list"),
     path("milestones/<int:pk>/", MilestoneDetailAPIView.as_view(), name="milestones-detail"),
+    
     path("profit-loss-advanced/<int:pk>/", ProfitLossAdvancedAPIView.as_view(), name="profit-loss-advanced"),
     path("transactions/", TransactionCreateAPIView.as_view(), name="transactions-create"),
 
@@ -65,7 +67,8 @@ urlpatterns = [
 
     # Reject a specific change request
     path("change-requests/<int:pk>/reject/", ChangeRequestRejectView.as_view(), name="change-request-reject"),
-     path("invoices/generate/<int:pk>/", InvoiceGenerateAPIView.as_view(), name="generate-invoice"),
+    path("invoices/generate/<int:pk>/", InvoiceGenerateAPIView.as_view(), name="generate-invoice"),
+    path('download-invoice/<str:filename>/', download_invoice, name='download-invoice'),
 
 
     path("notifications/", NotificationListAPIView.as_view(), name="notifications"),

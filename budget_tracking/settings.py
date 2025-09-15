@@ -226,6 +226,28 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
     }
 }
+from django.core.files.storage import default_storage
+from django.conf import settings
+import os
+from io import BytesIO
+from reportlab.pdfgen import canvas
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Create PDF in memory
+buffer = BytesIO()
+c = canvas.Canvas(buffer)
+c.drawString(100, 750, "Hello, this is a test PDF.")
+c.save()
+
+# Get PDF bytes
+pdf_bytes = buffer.getvalue()
+buffer.close()
+
+# Define file path
+pdf_path = os.path.join(settings.MEDIA_ROOT, 'invoices', 'INV-2025-16-2DBA60.pdf')
+
+# Make sure directory exists
+os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
+
+# Save the PDF to disk
+with open(pdf_path, 'wb') as f:
+    f.write(pdf_bytes)
