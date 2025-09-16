@@ -4,15 +4,7 @@ from django.core.mail import send_mail
 from django.conf import settings  # ✅ Import settings to use EMAIL_HOST_USER
 from .models import Task
 from django.utils.timezone import now
-# @shared_task
-# def send_task_assignment_email(subject, message, recipient_email):
-#     send_mail(
-#         subject=subject,
-#         message=message,
-#         from_email=settings.EMAIL_HOST_USER,  # 🔥 Use email from settings
-#         recipient_list=[recipient_email],
-#         fail_silently=False,
-#     )
+
 @shared_task
 def send_task_assignment_email(task_id):
    

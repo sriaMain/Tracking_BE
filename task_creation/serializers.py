@@ -54,6 +54,10 @@ class TaskSerializer(serializers.ModelSerializer):
         write_only=True,
         required=True
     )
+    assigned_to = serializers.PrimaryKeyRelatedField(
+    queryset=User.objects.all(),
+    required=True
+    )
 
     # Output field
     project = serializers.SlugRelatedField(
