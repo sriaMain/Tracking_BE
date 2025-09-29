@@ -30,7 +30,9 @@ DEBUG = True
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # ALLOWED_HOSTS = ["tracking-be.onrender.com", "localhost", "127.0.0.1"]
-ALLOWED_HOSTS = ["*"]
+# ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['tracking-be-q7u5.onrender.com', 'localhost', '127.0.0.1']
+
 # ALLOWED_HOSTS= ["project-budget-tracking.onrender.com","localhost", "127.0.0.1"]
 # ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS',
 #                               os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost')).split(',')
@@ -40,6 +42,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS=True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000", 
+    "https://tracking-be-q7u5.onrender.com",
     # "http://localhost:8000", 
 #      "*" # Allow requests from React frontend Add on
 ]
