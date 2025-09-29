@@ -126,16 +126,17 @@ WSGI_APPLICATION = 'Tracking_BE.wsgi.application'
 #     }
 # }
 
+import os
 import dj_database_url
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
+        default=os.environ.get("DATABASE_URL"),  # use environment variable
         conn_max_age=600,
         ssl_require=True
     )
 }
-
+ 
 
 from decouple import config
 
