@@ -38,7 +38,7 @@ ALLOWED_HOSTS = ['tracking-be-q7u5.onrender.com', 'localhost', '127.0.0.1']
 #                               os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost')).split(',')
 
 
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS=True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000", 
