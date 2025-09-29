@@ -31,7 +31,7 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # ALLOWED_HOSTS = ["tracking-be.onrender.com", "localhost", "127.0.0.1"]
 ALLOWED_HOSTS = ["*"]
-ALLOWED_HOSTS= ["project-budget-tracking.onrender.com","localhost", "127.0.0.1"]
+# ALLOWED_HOSTS= ["project-budget-tracking.onrender.com","localhost", "127.0.0.1"]
 # ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS',
 #                               os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost')).split(',')
 
@@ -112,28 +112,28 @@ WSGI_APPLICATION = 'Tracking_BE.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'Tracking',
-#         'USER': 'postgres',
-#         'PASSWORD': 'postgres@sql',
-#         'HOST': 'localhost',
-#         'PORT': '5433'
-#     }
-# }
-from decouple import config
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT', default='5432'),
+        'NAME': 'management',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres@2025',
+        'HOST': 'localhost',
+        'PORT': '5432'
     }
 }
+from decouple import config
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': config('DB_NAME'),
+#         'USER': config('DB_USER'),
+#         'PASSWORD': config('DB_PASSWORD'),
+#         'HOST': config('DB_HOST'),
+#         'PORT': config('DB_PORT', default='5432'),
+#     }
+# }
 
 
 # import os
