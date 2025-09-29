@@ -310,3 +310,10 @@ os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
 # Save the PDF to disk
 with open(pdf_path, 'wb') as f:
     f.write(pdf_bytes)
+
+
+from decouple import config
+
+SECRET_KEY = config('SECRET_KEY', default='dev-secret')
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split(',')
