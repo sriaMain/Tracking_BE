@@ -27,15 +27,12 @@ SECRET_KEY=os.environ.get("SECRET_KEY","dev-secret")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+# DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+# ALLOWED_HOSTS = ['*']
 
-# ALLOWED_HOSTS = ["tracking-be.onrender.com", "localhost", "127.0.0.1"]
-# ALLOWED_HOSTS = ["*"]
-ALLOWED_HOSTS = ['tracking-be-q7u5.onrender.com', 'localhost', '127.0.0.1']
+# ALLOWED_HOSTS = ["tracking-be-ksqm.onrender.com", "localhost", "127.0.0.1", "127.0.0.1:8000"]
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', "tracking-be-ksqm.onrender.com"]
 
-# ALLOWED_HOSTS= ["project-budget-tracking.onrender.com","localhost", "127.0.0.1"]
-# ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS',
-#                               os.environ.get('KOYEB_PUBLIC_DOMAIN', 'localhost')).split(',')
 
 
 CORS_ALLOW_ALL_ORIGINS = False
@@ -43,13 +40,15 @@ CORS_ALLOW_CREDENTIALS=True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000", 
     "https://tracking-be-q7u5.onrender.com",
-    # "http://localhost:8000", 
+    "http://localhost:8000", 
 #      "*" # Allow requests from React frontend Add on
 ]
 
 # Add trusted origins for CSRF
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
+    "http://127.0.0.1:8000",        # ✅ Add this
+    "https://tracking-be-ksqm.onrender.com",
 ]
 
 
@@ -127,15 +126,23 @@ WSGI_APPLICATION = 'Tracking_BE.wsgi.application'
 # }
 
 import os
-import dj_database_url
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),  # use environment variable
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
+if os.environ.get("DATABASE_URL"):
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
  
 
 from decouple import config
@@ -243,8 +250,10 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = 'gedelasridevi02@gmail.com'
-EMAIL_HOST_PASSWORD = 'qqdg hviv kjpj xyhd'
+# EMAIL_HOST_USER = 'gedelasridevi02@gmail.com'
+# EMAIL_HOST_PASSWORD = 'qqdg hviv kjpj xyhd'
+EMAIL_HOST_USER = 'teerdavenigedela@gmail.com'
+EMAIL_HOST_PASSWORD = 'vcig blpb lbdg sact'
 
 
 

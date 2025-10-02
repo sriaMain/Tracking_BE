@@ -51,32 +51,63 @@ class RegisterView(APIView):
     authentication_classes = [JWTAuthentication]  # Use JWT for authentication
   
 
-    def post(self, request):
-        """Handles user registration."""
-        # if request.user.is_authenticated and not getattr(request.user, 'is_admin', False):
-        #     return Response({'error': 'Only admins can register new users'}, status=status.HTTP_403_FORBIDDEN)
+    # def post(self, request):
+    #     """Handles user registration."""
+    #     if request.user.is_authenticated and not getattr(request.user, 'is_admin', False):
+    #         return Response({'error': 'Only admins can register new users'}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = RegisterSerializer(data=request.data)  # ✅ Directly calling RegisterSerializer
+    #     serializer = RegisterSerializer(data=request.data)  # ✅ Directly calling RegisterSerializer
 
-        if serializer.is_valid():
-            user = serializer.save()
-            # raw_password = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-            raw_password = generate_password()
-            user.set_password(raw_password)
-            user.save()
+    #     if serializer.is_valid():
+    #         user = serializer.save()
+    #         # raw_password = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+    #         raw_password = generate_password()
+    #         user.set_password(raw_password)
+    #         user.save()
 
             
-            send_registration_email_sync(user.id, raw_password)  # ✅ Async email
-            logger.info(f"User {user.email} registered successfully, email task queued.")
+    #         send_registration_email_sync(user.id, raw_password)  # ✅ Async email
+    #         logger.info(f"User {user.email} registered successfully, email task queued.")
         
 
-            return Response(
-                {"message": "User registered successfully. Check your email for login credentials."},
-                status=status.HTTP_201_CREATED,
-            )
+    #         return Response(
+    #             {"message": "User registered successfully. Check your email for login credentials."},
+    #             status=status.HTTP_201_CREATED,
+    #         )
 
-        logger.error(f"Registration validation failed: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    #     logger.error(f"Registration validation failed: {serializer.errors}")
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request):
+        try:
+            if request.user.is_authenticated and not getattr(request.user, 'is_admin', False):
+                return Response({'error': 'Only admins can register new users'}, status=status.HTTP_403_FORBIDDEN)
+
+            serializer = RegisterSerializer(data=request.data)
+
+            if serializer.is_valid():
+                user = serializer.save()
+                raw_password = generate_password()
+                user.set_password(raw_password)
+                user.save()
+
+                try:
+                    send_registration_email_sync(user.id, raw_password)
+                except Exception as e:
+                    logger.error(f"Email sending failed: {e}")
+
+                return Response(
+                    {"message": "User registered successfully. Check your email for login credentials."},
+                    status=status.HTTP_201_CREATED,
+                )
+
+            logger.error(f"Registration validation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            logger.error(f"Unexpected registration error: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 
