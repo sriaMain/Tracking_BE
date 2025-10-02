@@ -245,15 +245,28 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'login.User'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
 # EMAIL_HOST_USER = 'gedelasridevi02@gmail.com'
 # EMAIL_HOST_PASSWORD = 'qqdg hviv kjpj xyhd'
-EMAIL_HOST_USER = 'teerdavenigedela@gmail.com'
-EMAIL_HOST_PASSWORD = 'vcig blpb lbdg sact'
+# EMAIL_HOST_USER = 'teerdavenigedela@gmail.com'
+# EMAIL_HOST_PASSWORD = 'vcig blpb lbdg sact'
+
+
+import os
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+
 
 
 
@@ -326,3 +339,13 @@ from decouple import config
 SECRET_KEY = config('SECRET_KEY', default='dev-secret')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split(',')
+
+
+import os
+
+CELERY_BROKER_URL = os.environ.get('REDIS_URL')  # set this in Render environment variables
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL')
+
+
+from dotenv import load_dotenv
+load_dotenv()
