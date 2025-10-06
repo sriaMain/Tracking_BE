@@ -276,8 +276,10 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis connection URL (assuming Redis is running locally)
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'  # Where Celery stores results (Redis as well)
+# CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis connection URL (assuming Redis is running locally)
+CELERY_BROKER_URL = 'amqps://rznhxcqv:cIOTicAiTGirGhY_1BJz-huTpTLQUstK@gorilla.lmq.cloudamqp.com/rznhxcqv'
+# CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'  # Where Celery stores results (Redis as well)
+CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['application/json']  # Celery task content serialization format
 CELERY_TASK_SERIALIZER = 'json'  # Task serialization format
 CELERY_RESULT_SERIALIZER = 'json'  # Result serialization format

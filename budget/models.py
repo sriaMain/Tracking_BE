@@ -412,14 +412,7 @@ class ProjectPaymentTracking(models.Model):
     def completed_milestones_amount(self) -> Decimal:
         return self.calculated_payout_from_milestones
 
-    # @property
-    # def total_holds_amount(self) -> Decimal:
-    #     if not hasattr(self, "holds"):
-    #         return Decimal("0.00")
-    #     total = self.holds.filter(is_active=True).aggregate(
-    #         total=Coalesce(Sum("amount"), Value(Decimal("0.00")))
-    #     )["total"]
-    #     return Decimal(total or 0)
+    
     @property
     def total_holds_amount(self) -> Decimal:
         """Return total active holds, but avoid querying before instance has a pk."""
@@ -462,23 +455,7 @@ class ProjectPaymentTracking(models.Model):
     def is_budget_exceeded(self) -> bool:
         return self.total_milestones_amount > self.total_available_budget
 
-    # def validate_budget_limit(self, new_payout=None):
-    #     """Ensure payout + holds + retention <= total budget"""
-    #     payout_to_check = Decimal(new_payout) if new_payout is not None else self.payout
-    #     total_used = payout_to_check + self.retention_amount + self.total_holds_amount
-    #     if total_used > self.total_available_budget:
-    #         raise ValidationError(
-    #             f"Budget exceeded! Allowed: {self.total_available_budget}, Attempted: {total_used}"
-    #         )
-    # def validate_budget_limit(self, new_payout=None):
-    #     """Ensure payout + holds + retention <= total available budget"""
-    #     payout_to_check = Decimal(new_payout) if new_payout is not None else (self.payout or Decimal("0.00"))
-    #     total_used = payout_to_check + (self.retention_amount or Decimal("0.00")) + self.total_holds_amount
 
-    #     if total_used > self.total_available_budget:
-    #         raise ValidationError(
-    #             f"Budget exceeded! Allowed: {self.total_available_budget}, Attempted: {total_used}"
-    #         )
     def validate_budget_limit(self, new_payout=None):
         payout_to_check = Decimal(new_payout) if new_payout is not None else (self.total_payout)
         total_used = payout_to_check + (self.retention_amount or Decimal("0.00")) + self.total_holds_amount
@@ -619,22 +596,7 @@ class ProjectPaymentMilestone(models.Model):
             tracking.recalc_payout()
             # Save tracking so pending/percentages update; recalc_payout does not save by default
             tracking.save()
-    # def save(self, *args, **kwargs):
-    #     is_new = self.pk is None
-    #     old_status = None
-    #     if not is_new:
-    #         try:
-    #             old_status = ProjectPaymentMilestone.objects.get(pk=self.pk).status
-    #         except ProjectPaymentMilestone.DoesNotExist:
-    #             old_status = None
-
-    #     super().save(*args, **kwargs)
-
-    #     # Recalculate payout if milestone is completed
-    #     if (is_new and self.status == "Completed") or (old_status != "Completed" and self.status == "Completed"):
-    #         tracking = self.payment_tracking
-    #         tracking.recalc_payout()
-    #         tracking.save()
+   
 
 
 
