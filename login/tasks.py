@@ -8,6 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
+@shared_task
 
 def send_registration_email_sync(user_id, raw_password):
     """Send registration email synchronously (fallback if Celery fails)."""
