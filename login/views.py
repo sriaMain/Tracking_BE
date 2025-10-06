@@ -92,7 +92,7 @@ class RegisterView(APIView):
                 user.save()
 
                 try:
-                    send_registration_email_sync(user.id, raw_password)
+                    send_registration_email_sync.delay(user.id, raw_password)
                 except Exception as e:
                     logger.error(f"Email sending failed: {e}")
 
